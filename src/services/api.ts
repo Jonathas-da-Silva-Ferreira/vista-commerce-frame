@@ -1,10 +1,11 @@
-import type { Product, Category, PaginatedResponse, SearchFilters } from '@/types';
+import type { Product, Category, PaginatedResponse } from '@/types';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
+const API_BASE_URL = import.meta.env.VITE_API_URL || '';
 
 class ApiService {
-  private async fetch<T>(endpoint: string, options?: RequestInit): Promise<T> {
-    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+  private async request<T>(endpoint: string, options?: RequestInit): Promise<T> {
+    const url = `${API_BASE_URL}${endpoint}`;
+    const response = await fetch(url, {
       headers: {
         'Content-Type': 'application/json',
         ...options?.headers,
@@ -20,49 +21,51 @@ class ApiService {
   }
 
   // Products
-  async getProducts(filters?: SearchFilters, page = 1, limit = 12): Promise<PaginatedResponse<Product>> {
-    const params = new URLSearchParams({
-      page: String(page),
-      limit: String(limit),
-    });
+  async getProducts(
+    filters?: { category?: string; query?: string; minPrice?: number; maxPrice?: number; sortBy?: string },
+    page = 1,
+    limit = 12
+  ): Promise<PaginatedResponse<Product>> {
+    const params = new URLSearchParams({ page: String(page), limit: String(limit) });
 
     if (filters?.query) params.append('q', filters.query);
     if (filters?.category) params.append('category', filters.category);
-    if (filters?.minPrice) params.append('minPrice', String(filters.minPrice));
-    if (filters?.maxPrice) params.append('maxPrice', String(filters.maxPrice));
+    if (filters?.minPrice !== undefined) params.append('minPrice', String(filters.minPrice));
+    if (filters?.maxPrice !== undefined) params.append('maxPrice', String(filters.maxPrice));
     if (filters?.sortBy) params.append('sortBy', filters.sortBy);
 
-    return this.fetch<PaginatedResponse<Product>>(`/products?${params}`);
+    return this.request<PaginatedResponse<Product>>(`/api/products?${params}`);
   }
 
   async getProductById(id: string): Promise<Product> {
-    return this.fetch<Product>(`/products/${id}`);
-  }
-
-  async getProductsByCategory(categorySlug: string, page = 1, limit = 12): Promise<PaginatedResponse<Product>> {
-    return this.fetch<PaginatedResponse<Product>>(`/products?category=${categorySlug}&page=${page}&limit=${limit}`);
+    return this.request<Product>(`/api/products/${id}`);
   }
 
   async getFeaturedProducts(): Promise<Product[]> {
-    return this.fetch<Product[]>('/products/featured');
+    return this.request<Product[]>('/api/products/featured');
   }
 
   async getPromotionProducts(): Promise<Product[]> {
-    return this.fetch<Product[]>('/products/promotions');
+    return this.request<Product[]>('/api/products/promotions');
+  }
+
+  async getRelatedProducts(productId: string, category: string): Promise<Product[]> {
+    const params = new URLSearchParams({ category, exclude: productId, limit: '4' });
+    return this.request<Product[]>(`/api/products/related?${params}`);
   }
 
   // Categories
   async getCategories(): Promise<Category[]> {
-    return this.fetch<Category[]>('/categories');
+    return this.request<Category[]>('/api/categories');
   }
 
   async getCategoryBySlug(slug: string): Promise<Category> {
-    return this.fetch<Category>(`/categories/${slug}`);
+    return this.request<Category>(`/api/categories/${slug}`);
   }
 
   // Search
   async search(query: string): Promise<Product[]> {
-    return this.fetch<Product[]>(`/search?q=${encodeURIComponent(query)}`);
+    return this.request<Product[]>(`/api/search?q=${encodeURIComponent(query)}`);
   }
 }
 
