@@ -1,4 +1,4 @@
-import type { Product, Category, PaginatedResponse } from '@/types';
+import type { Product, Category, Banner, PaginatedResponse } from '@/types';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || '';
 
@@ -61,6 +61,11 @@ class ApiService {
 
   async getCategoryBySlug(slug: string): Promise<Category> {
     return this.request<Category>(`/api/categories/${slug}`);
+  }
+
+  // Banners
+  async getBanners(): Promise<Banner[]> {
+    return this.request<Banner[]>('/api/banners');
   }
 
   // Search

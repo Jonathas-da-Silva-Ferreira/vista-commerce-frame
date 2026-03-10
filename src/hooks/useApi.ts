@@ -1,22 +1,6 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { api } from '@/services/api';
-import { mockApi, categories as fallbackCategories } from '@/data/mockData';
-import type { Product, Category, PaginatedResponse } from '@/types';
-
-const IS_API_CONFIGURED = Boolean(import.meta.env.VITE_API_URL);
-
-/**
- * Resolves API calls: tries the real API first, falls back to mock if not configured.
- */
-async function resolve<T>(apiFn: () => Promise<T>, mockFn: () => Promise<T>): Promise<T> {
-  if (!IS_API_CONFIGURED) return mockFn();
-  try {
-    return await apiFn();
-  } catch {
-    console.warn('[API] Falling back to mock data');
-    return mockFn();
-  }
-}
+import type { Product, Category, Banner, PaginatedResponse } from '@/types';
 
 export function useProducts(
   filters?: { category?: string; query?: string; minPrice?: number; maxPrice?: number; sortBy?: string },
@@ -34,10 +18,7 @@ export function useProducts(
     setLoading(true);
     setError(null);
 
-    resolve(
-      () => api.getProducts(filters, page, limit),
-      () => mockApi.getProducts(filters, page, limit)
-    )
+    api.getProducts(filters, page, limit)
       .then(result => { if (!cancelled) setData(result); })
       .catch(err => { if (!cancelled) setError(err.message); })
       .finally(() => { if (!cancelled) setLoading(false); });
@@ -57,11 +38,9 @@ export function useProduct(id: string | undefined) {
     if (!id) return;
     let cancelled = false;
     setLoading(true);
+    setError(null);
 
-    resolve(
-      () => api.getProductById(id),
-      () => mockApi.getProductById(id)
-    )
+    api.getProductById(id)
       .then(result => { if (!cancelled) setProduct(result); })
       .catch(err => { if (!cancelled) setError(err.message); })
       .finally(() => { if (!cancelled) setLoading(false); });
@@ -75,82 +54,95 @@ export function useProduct(id: string | undefined) {
 export function useCategories() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
 
-    resolve(
-      () => api.getCategories(),
-      () => mockApi.getCategories()
-    )
+    api.getCategories()
       .then(result => { if (!cancelled) setCategories(result); })
-      .catch(() => { if (!cancelled) setCategories(fallbackCategories); })
+      .catch(err => { if (!cancelled) setError(err.message); })
       .finally(() => { if (!cancelled) setLoading(false); });
 
     return () => { cancelled = true; };
   }, []);
 
-  return { categories, loading };
+  return { categories, loading, error };
 }
 
 export function useFeaturedProducts() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
-    resolve(
-      () => api.getFeaturedProducts(),
-      () => mockApi.getFeaturedProducts()
-    )
+
+    api.getFeaturedProducts()
       .then(result => { if (!cancelled) setProducts(result); })
-      .catch(() => {})
+      .catch(err => { if (!cancelled) setError(err.message); })
       .finally(() => { if (!cancelled) setLoading(false); });
 
     return () => { cancelled = true; };
   }, []);
 
-  return { products, loading };
+  return { products, loading, error };
 }
 
 export function usePromotionProducts() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
-    resolve(
-      () => api.getPromotionProducts(),
-      () => mockApi.getPromotionProducts()
-    )
+
+    api.getPromotionProducts()
       .then(result => { if (!cancelled) setProducts(result); })
-      .catch(() => {})
+      .catch(err => { if (!cancelled) setError(err.message); })
       .finally(() => { if (!cancelled) setLoading(false); });
 
     return () => { cancelled = true; };
   }, []);
 
-  return { products, loading };
+  return { products, loading, error };
 }
 
 export function useRelatedProducts(productId: string | undefined, category: string | undefined) {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!productId || !category) return;
     let cancelled = false;
 
-    resolve(
-      () => api.getRelatedProducts(productId, category),
-      () => mockApi.getRelatedProducts(productId, category)
-    )
+    api.getRelatedProducts(productId, category)
       .then(result => { if (!cancelled) setProducts(result); })
-      .catch(() => {})
+      .catch(err => { if (!cancelled) setError(err.message); })
       .finally(() => { if (!cancelled) setLoading(false); });
 
     return () => { cancelled = true; };
   }, [productId, category]);
 
-  return { products, loading };
+  return { products, loading, error };
+}
+
+export function useBanners() {
+  const [banners, setBanners] = useState<Banner[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    api.getBanners()
+      .then(result => { if (!cancelled) setBanners(result); })
+      .catch(err => { if (!cancelled) setError(err.message); })
+      .finally(() => { if (!cancelled) setLoading(false); });
+
+    return () => { cancelled = true; };
+  }, []);
+
+  return { banners, loading, error };
 }
