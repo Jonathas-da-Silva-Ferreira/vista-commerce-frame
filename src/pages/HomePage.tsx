@@ -3,12 +3,13 @@ import SearchBar from '@/components/SearchBar';
 import Banner from '@/components/Banner';
 import CategoryGrid from '@/components/CategoryGrid';
 import ProductGrid from '@/components/ProductGrid';
-import { useCategories, useFeaturedProducts, usePromotionProducts } from '@/hooks/useApi';
+import { useCategories, useFeaturedProducts, usePromotionProducts, useBanners } from '@/hooks/useApi';
 
 export default function HomePage() {
   const { categories, loading: catLoading } = useCategories();
   const { products: featuredProducts, loading: featLoading } = useFeaturedProducts();
   const { products: promotionProducts, loading: promoLoading } = usePromotionProducts();
+  const { banners, loading: bannerLoading } = useBanners();
 
   return (
     <MainLayout>
@@ -18,7 +19,7 @@ export default function HomePage() {
         </section>
 
         <section>
-          <Banner />
+          <Banner banners={banners} loading={bannerLoading} />
         </section>
 
         <section>
