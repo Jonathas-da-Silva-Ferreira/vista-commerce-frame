@@ -57,3 +57,12 @@ export interface PaginatedResponse<T> {
   limit: number;
   hasMore: boolean;
 }
+
+export interface Banner {
+  id: string;
+  title: string;
+  subtitle: string;
+  bgColor: string;
+  image?: string;
+  link?: string;
+}
