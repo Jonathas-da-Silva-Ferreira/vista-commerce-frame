@@ -66,3 +66,21 @@ export interface Banner {
   image?: string;
   link?: string;
 }
+
+export interface CategoryFilterOption {
+  value: string;
+  label: string;
+  count?: number;
+}
+
+export interface CategoryFilterGroup {
+  key: string;
+  label: string;
+  type: 'checkbox' | 'radio' | 'range';
+  options: CategoryFilterOption[];
+}
+
+export interface CategoryFiltersResponse {
+  categorySlug: string;
+  filters: CategoryFilterGroup[];
+}

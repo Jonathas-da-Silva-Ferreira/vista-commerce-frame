@@ -63,6 +63,11 @@ class ApiService {
     return this.request<Category>(`/api/categories/${slug}`);
   }
 
+  // Category Filters
+  async getCategoryFilters(categorySlug: string): Promise<CategoryFiltersResponse> {
+    return this.request<CategoryFiltersResponse>(`/api/categories/${categorySlug}/filters`);
+  }
+
   // Banners
   async getBanners(): Promise<Banner[]> {
     return this.request<Banner[]>('/api/banners');
