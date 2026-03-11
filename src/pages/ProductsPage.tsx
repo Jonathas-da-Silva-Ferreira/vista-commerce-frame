@@ -1,19 +1,24 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
-import { ChevronRight, Filter, X, ChevronDown, ChevronLeft } from 'lucide-react';
+import { ChevronRight, Filter, X, ChevronDown, ChevronLeft, Loader2 } from 'lucide-react';
 import MainLayout from '@/components/layout/MainLayout';
 import SearchBar from '@/components/SearchBar';
 import ProductGrid from '@/components/ProductGrid';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
+import { Checkbox } from '@/components/ui/checkbox';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Label } from '@/components/ui/label';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
 import {
   Collapsible, CollapsibleContent, CollapsibleTrigger,
 } from '@/components/ui/collapsible';
-import { useProducts, useCategories } from '@/hooks/useApi';
+import { useProducts, useCategories, useCategoryFilters } from '@/hooks/useApi';
 import { formatCurrency } from '@/lib/utils';
+import type { CategoryFilterGroup } from '@/types';
 
 const ITEMS_PER_PAGE = 8;
 
@@ -31,13 +36,24 @@ export default function ProductsPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 5000]);
   const [sortBy, setSortBy] = useState('relevance');
-  const [openSections, setOpenSections] = useState({ categories: true, price: true });
+  const [openSections, setOpenSections] = useState<Record<string, boolean>>({ categories: true, price: true });
+  const [dynamicSelections, setDynamicSelections] = useState<Record<string, string[]>>({});
 
   const query = searchParams.get('q') || '';
   const categorySlug = searchParams.get('categoria') || '';
 
   const { categories } = useCategories();
   const category = useMemo(() => categories.find(c => c.slug === categorySlug), [categories, categorySlug]);
+  const { filters: categoryFilters, loading: filtersLoading } = useCategoryFilters(categorySlug || undefined);
+
+  // Reset dynamic filters when category changes
+  useEffect(() => {
+    setDynamicSelections({});
+    // Open all dynamic filter sections by default
+    const newSections: Record<string, boolean> = { categories: true, price: true };
+    categoryFilters.forEach(f => { newSections[f.key] = true; });
+    setOpenSections(newSections);
+  }, [categorySlug, categoryFilters]);
 
   const filters = useMemo(() => ({
     category: categorySlug,
@@ -51,7 +67,6 @@ export default function ProductsPage() {
 
   const totalPages = Math.ceil(total / ITEMS_PER_PAGE);
 
-  // Reset page when filters change
   useEffect(() => { setCurrentPage(1); }, [categorySlug, query, priceRange, sortBy]);
 
   const handleSearch = (newQuery: string) => {
@@ -64,10 +79,84 @@ export default function ProductsPage() {
     setSearchParams({});
     setPriceRange([0, 5000]);
     setSortBy('relevance');
+    setDynamicSelections({});
   };
 
-  const toggleSection = (section: keyof typeof openSections) => {
+  const toggleSection = (section: string) => {
     setOpenSections(prev => ({ ...prev, [section]: !prev[section] }));
+  };
+
+  const handleCheckboxChange = (filterKey: string, value: string, checked: boolean) => {
+    setDynamicSelections(prev => {
+      const current = prev[filterKey] || [];
+      return {
+        ...prev,
+        [filterKey]: checked
+          ? [...current, value]
+          : current.filter(v => v !== value),
+      };
+    });
+  };
+
+  const handleRadioChange = (filterKey: string, value: string) => {
+    setDynamicSelections(prev => ({ ...prev, [filterKey]: [value] }));
+  };
+
+  const renderDynamicFilter = (filterGroup: CategoryFilterGroup) => {
+    const isOpen = openSections[filterGroup.key] ?? true;
+
+    return (
+      <Collapsible key={filterGroup.key} open={isOpen} onOpenChange={() => toggleSection(filterGroup.key)}>
+        <CollapsibleTrigger className="flex items-center justify-between w-full font-semibold mb-3 hover:text-primary transition-colors">
+          {filterGroup.label}
+          <ChevronDown className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+        </CollapsibleTrigger>
+        <CollapsibleContent>
+          {filterGroup.type === 'checkbox' && (
+            <div className="space-y-2 max-h-48 overflow-y-auto pr-2">
+              {filterGroup.options.map(option => {
+                const selected = dynamicSelections[filterGroup.key]?.includes(option.value) ?? false;
+                return (
+                  <label
+                    key={option.value}
+                    className="flex items-center gap-2 py-1.5 px-2 rounded-md cursor-pointer hover:bg-muted transition-colors text-sm"
+                  >
+                    <Checkbox
+                      checked={selected}
+                      onCheckedChange={(checked) => handleCheckboxChange(filterGroup.key, option.value, !!checked)}
+                    />
+                    <span className="flex-1">{option.label}</span>
+                    {option.count !== undefined && (
+                      <span className="text-xs text-muted-foreground">({option.count})</span>
+                    )}
+                  </label>
+                );
+              })}
+            </div>
+          )}
+          {filterGroup.type === 'radio' && (
+            <RadioGroup
+              value={dynamicSelections[filterGroup.key]?.[0] || ''}
+              onValueChange={(value) => handleRadioChange(filterGroup.key, value)}
+              className="space-y-2"
+            >
+              {filterGroup.options.map(option => (
+                <label
+                  key={option.value}
+                  className="flex items-center gap-2 py-1.5 px-2 rounded-md cursor-pointer hover:bg-muted transition-colors text-sm"
+                >
+                  <RadioGroupItem value={option.value} />
+                  <span className="flex-1">{option.label}</span>
+                  {option.count !== undefined && (
+                    <span className="text-xs text-muted-foreground">({option.count})</span>
+                  )}
+                </label>
+              ))}
+            </RadioGroup>
+          )}
+        </CollapsibleContent>
+      </Collapsible>
+    );
   };
 
   const FilterSidebar = () => (
@@ -100,6 +189,18 @@ export default function ProductsPage() {
         </CollapsibleContent>
       </Collapsible>
 
+      {/* Dynamic filters based on selected category */}
+      {categorySlug && filtersLoading && (
+        <div className="space-y-3">
+          <Skeleton className="h-5 w-24" />
+          <Skeleton className="h-4 w-full" />
+          <Skeleton className="h-4 w-3/4" />
+          <Skeleton className="h-4 w-5/6" />
+        </div>
+      )}
+
+      {categorySlug && !filtersLoading && categoryFilters.map(renderDynamicFilter)}
+
       <Collapsible open={openSections.price} onOpenChange={() => toggleSection('price')}>
         <CollapsibleTrigger className="flex items-center justify-between w-full font-semibold mb-3 hover:text-primary transition-colors">
           Faixa de Preço
@@ -123,6 +224,30 @@ export default function ProductsPage() {
           </div>
         </CollapsibleContent>
       </Collapsible>
+
+      {Object.values(dynamicSelections).some(v => v.length > 0) && (
+        <div className="pt-2 border-t border-border">
+          <p className="text-xs text-muted-foreground mb-2">Filtros ativos:</p>
+          <div className="flex flex-wrap gap-1">
+            {Object.entries(dynamicSelections).map(([key, values]) =>
+              values.map(val => (
+                <span
+                  key={`${key}-${val}`}
+                  className="inline-flex items-center gap-1 bg-primary/10 text-primary text-xs px-2 py-1 rounded-full"
+                >
+                  {val}
+                  <button
+                    onClick={() => handleCheckboxChange(key, val, false)}
+                    className="hover:text-destructive"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </span>
+              ))
+            )}
+          </div>
+        </div>
+      )}
 
       <Button variant="outline" className="w-full" onClick={clearFilters}>
         <X className="w-4 h-4 mr-2" />
