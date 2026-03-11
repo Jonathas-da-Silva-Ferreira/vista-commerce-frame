@@ -106,6 +106,18 @@ const routes: Array<{ pattern: RegExp; handler: RouteHandler }> = [
       return json(categories);
     },
   },
+  // GET /api/categories/:slug/filters
+  {
+    pattern: /^\/api\/categories\/([^/?]+)\/filters$/,
+    handler: async (url) => {
+      await delay(120);
+      const slug = url.pathname.match(/\/api\/categories\/([^/?]+)\/filters$/)?.[1];
+      if (!slug) return json({ error: 'Missing slug' }, 400);
+      const filters = getCategoryFilters(slug);
+      const response: CategoryFiltersResponse = { categorySlug: slug, filters };
+      return json(response);
+    },
+  },
   // GET /api/categories/:slug
   {
     pattern: /^\/api\/categories\/([^/?]+)$/,
