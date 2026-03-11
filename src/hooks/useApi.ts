@@ -146,3 +146,28 @@ export function useBanners() {
 
   return { banners, loading, error };
 }
+
+export function useCategoryFilters(categorySlug: string | undefined) {
+  const [data, setData] = useState<CategoryFiltersResponse | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!categorySlug) {
+      setData(null);
+      return;
+    }
+    let cancelled = false;
+    setLoading(true);
+    setError(null);
+
+    api.getCategoryFilters(categorySlug)
+      .then(result => { if (!cancelled) setData(result); })
+      .catch(err => { if (!cancelled) setError(err.message); })
+      .finally(() => { if (!cancelled) setLoading(false); });
+
+    return () => { cancelled = true; };
+  }, [categorySlug]);
+
+  return { filters: data?.filters || [], loading, error };
+}
