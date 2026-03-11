@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { api } from '@/services/api';
-import type { Product, Category, Banner, PaginatedResponse } from '@/types';
+import type { Product, Category, Banner, PaginatedResponse, CategoryFiltersResponse } from '@/types';
 
 export function useProducts(
   filters?: { category?: string; query?: string; minPrice?: number; maxPrice?: number; sortBy?: string },
