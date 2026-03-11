@@ -1,4 +1,4 @@
-import type { Product, Category, Banner, PaginatedResponse, CategoryFiltersResponse } from '@/types';
+import type { Product, Category, Banner, PaginatedResponse } from '@/types';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || '';
 
@@ -61,11 +61,6 @@ class ApiService {
 
   async getCategoryBySlug(slug: string): Promise<Category> {
     return this.request<Category>(`/api/categories/${slug}`);
-  }
-
-  // Category Filters
-  async getCategoryFilters(categorySlug: string): Promise<CategoryFiltersResponse> {
-    return this.request<CategoryFiltersResponse>(`/api/categories/${categorySlug}/filters`);
   }
 
   // Banners
