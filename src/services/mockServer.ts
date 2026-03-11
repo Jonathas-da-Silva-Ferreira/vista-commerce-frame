@@ -3,7 +3,7 @@
  * Mirrors real API contract so switching to a real backend requires only setting VITE_API_URL.
  */
 import { products, categories } from '@/data/mockData';
-import type { Product, Banner, PaginatedResponse } from '@/types';
+import type { Product, Banner, PaginatedResponse, CategoryFilterGroup, CategoryFiltersResponse } from '@/types';
 
 const delay = (ms = 150) => new Promise(r => setTimeout(r, ms));
 
