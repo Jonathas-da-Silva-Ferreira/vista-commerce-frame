@@ -22,7 +22,7 @@ class ApiService {
 
   // Products
   async getProducts(
-    filters?: { category?: string; query?: string; minPrice?: number; maxPrice?: number; sortBy?: string },
+    filters?: { category?: string; query?: string; minPrice?: number; maxPrice?: number; sortBy?: string; featured?: boolean; promotion?: boolean },
     page = 1,
     limit = 12
   ): Promise<PaginatedResponse<Product>> {
@@ -33,6 +33,8 @@ class ApiService {
     if (filters?.minPrice !== undefined) params.append('minPrice', String(filters.minPrice));
     if (filters?.maxPrice !== undefined) params.append('maxPrice', String(filters.maxPrice));
     if (filters?.sortBy) params.append('sortBy', filters.sortBy);
+    if (filters?.featured) params.append('featured', 'true');
+    if (filters?.promotion) params.append('promotion', 'true');
 
     return this.request<PaginatedResponse<Product>>(`/api/products?${params}`);
   }

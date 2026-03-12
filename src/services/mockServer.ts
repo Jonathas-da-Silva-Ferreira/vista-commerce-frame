@@ -35,7 +35,12 @@ const routes: Array<{ pattern: RegExp; handler: RouteHandler }> = [
       const maxPrice = url.searchParams.get('maxPrice') ? Number(url.searchParams.get('maxPrice')) : undefined;
       const sortBy = url.searchParams.get('sortBy');
 
+      const featured = url.searchParams.get('featured');
+      const promotion = url.searchParams.get('promotion');
+
       let filtered = [...products];
+      if (featured === 'true') filtered = filtered.filter(p => p.isFeatured);
+      if (promotion === 'true') filtered = filtered.filter(p => p.isPromotion);
       if (category) filtered = filtered.filter(p => p.category === category);
       if (q) filtered = filtered.filter(p => p.name.toLowerCase().includes(q) || p.description.toLowerCase().includes(q));
       if (minPrice !== undefined) filtered = filtered.filter(p => p.price >= minPrice);
