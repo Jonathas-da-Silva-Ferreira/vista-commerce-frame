@@ -36,16 +36,22 @@ export default function ProductsPage() {
   const query = searchParams.get('q') || '';
   const categorySlug = searchParams.get('categoria') || '';
 
+  const isSpecialFeatured = categorySlug === 'melhores-produtos';
+  const isSpecialPromotion = categorySlug === 'promocao';
+  const isSpecialCategory = isSpecialFeatured || isSpecialPromotion;
+
   const { categories } = useCategories();
   const category = useMemo(() => categories.find(c => c.slug === categorySlug), [categories, categorySlug]);
 
   const filters = useMemo(() => ({
-    category: categorySlug,
+    category: isSpecialCategory ? undefined : categorySlug,
     query,
     minPrice: priceRange[0],
     maxPrice: priceRange[1],
     sortBy: sortBy !== 'relevance' ? sortBy : undefined,
-  }), [categorySlug, query, priceRange, sortBy]);
+    featured: isSpecialFeatured || undefined,
+    promotion: isSpecialPromotion || undefined,
+  }), [categorySlug, query, priceRange, sortBy, isSpecialCategory, isSpecialFeatured, isSpecialPromotion]);
 
   const { data: products, total, loading } = useProducts(filters, currentPage, ITEMS_PER_PAGE);
 
