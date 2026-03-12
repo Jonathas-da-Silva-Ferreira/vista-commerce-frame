@@ -46,6 +46,9 @@ const routes: Array<{ pattern: RegExp; handler: RouteHandler }> = [
       if (minPrice !== undefined) filtered = filtered.filter(p => p.price >= minPrice);
       if (maxPrice !== undefined) filtered = filtered.filter(p => p.price <= maxPrice);
 
+      const minRating = url.searchParams.get('minRating') ? Number(url.searchParams.get('minRating')) : undefined;
+      if (minRating !== undefined) filtered = filtered.filter(p => p.rating >= minRating);
+
       if (sortBy) {
         switch (sortBy) {
           case 'price-asc': filtered.sort((a, b) => a.price - b.price); break;
