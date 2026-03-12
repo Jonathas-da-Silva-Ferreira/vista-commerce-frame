@@ -3,7 +3,7 @@ import { api } from '@/services/api';
 import type { Product, Category, Banner, PaginatedResponse } from '@/types';
 
 export function useProducts(
-  filters?: { category?: string; query?: string; minPrice?: number; maxPrice?: number; sortBy?: string },
+  filters?: { category?: string; query?: string; minPrice?: number; maxPrice?: number; sortBy?: string; featured?: boolean; promotion?: boolean },
   page = 1,
   limit = 12
 ) {
