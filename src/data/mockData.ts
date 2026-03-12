@@ -5,21 +5,21 @@
 import type { Product, Category, PaginatedResponse } from '@/types';
 
 export const categories: Category[] = [
-  { id: '1', name: 'Melhores Produtos', slug: 'melhores-produtos', icon: 'Award', color: 'gold' },
-  { id: '2', name: 'Promoção', slug: 'promocao', icon: 'Tag', color: 'red' },
-  { id: '3', name: 'Casa', slug: 'casa', icon: 'Home', color: 'orange' },
-  { id: '4', name: 'Peças Automotivas', slug: 'pecas-automotivas', icon: 'Car', color: 'olive' },
-  { id: '5', name: 'Livros', slug: 'livros', icon: 'BookOpen', color: 'brown' },
-  { id: '6', name: 'Ferramentas', slug: 'ferramentas', icon: 'Wrench', color: 'indigo' },
-  { id: '7', name: 'Modas', slug: 'modas', icon: 'Shirt', color: 'green-dark' },
-  { id: '8', name: 'Componentes de Computador', slug: 'componentes-computador', icon: 'Monitor', color: 'magenta' },
-  { id: '9', name: 'Eletrônicos', slug: 'eletronicos', icon: 'Headphones', color: 'blue' },
-  { id: '10', name: 'Esportes', slug: 'esportes', icon: 'Dumbbell', color: 'teal' },
-  { id: '11', name: 'Cozinha', slug: 'cozinha', icon: 'ChefHat', color: 'crimson' },
-  { id: '12', name: 'Aventura', slug: 'aventura', icon: 'Tent', color: 'khaki' },
-  { id: '13', name: 'Pesca', slug: 'pesca', icon: 'Fish', color: 'cyan' },
-  { id: '14', name: 'Pet Shop', slug: 'pet-shop', icon: 'PawPrint', color: 'purple' },
-  { id: '15', name: 'Brinquedos', slug: 'brinquedos', icon: 'Blocks', color: 'wine' },
+  { id: '1', name: 'Melhores Produtos', slug: 'melhores-produtos', icon: 'Award', color: 'gold', description: 'Os produtos mais bem avaliados e recomendados pelos nossos clientes.' },
+  { id: '2', name: 'Promoção', slug: 'promocao', icon: 'Tag', color: 'red', description: 'Aproveite descontos exclusivos por tempo limitado.' },
+  { id: '3', name: 'Casa', slug: 'casa', icon: 'Home', color: 'orange', description: 'Tudo para deixar sua casa mais bonita e funcional.' },
+  { id: '4', name: 'Peças Automotivas', slug: 'pecas-automotivas', icon: 'Car', color: 'olive', description: 'Peças e acessórios para manutenção e personalização do seu veículo.' },
+  { id: '5', name: 'Livros', slug: 'livros', icon: 'BookOpen', color: 'brown', description: 'Explore best-sellers, lançamentos e clássicos da literatura.' },
+  { id: '6', name: 'Ferramentas', slug: 'ferramentas', icon: 'Wrench', color: 'indigo', description: 'Ferramentas profissionais e domésticas para qualquer projeto.' },
+  { id: '7', name: 'Modas', slug: 'modas', icon: 'Shirt', color: 'green-dark', description: 'Tendências e peças essenciais para o seu guarda-roupa.' },
+  { id: '8', name: 'Componentes de Computador', slug: 'componentes-computador', icon: 'Monitor', color: 'magenta', description: 'Hardware e periféricos para montar ou atualizar seu PC.' },
+  { id: '9', name: 'Eletrônicos', slug: 'eletronicos', icon: 'Headphones', color: 'blue', description: 'Gadgets, smartphones e acessórios eletrônicos.' },
+  { id: '10', name: 'Esportes', slug: 'esportes', icon: 'Dumbbell', color: 'teal', description: 'Equipamentos e acessórios para todas as modalidades esportivas.' },
+  { id: '11', name: 'Cozinha', slug: 'cozinha', icon: 'ChefHat', color: 'crimson', description: 'Utensílios e eletrodomésticos para facilitar o dia a dia na cozinha.' },
+  { id: '12', name: 'Aventura', slug: 'aventura', icon: 'Tent', color: 'khaki', description: 'Equipamentos para camping, trilhas e atividades ao ar livre.' },
+  { id: '13', name: 'Pesca', slug: 'pesca', icon: 'Fish', color: 'cyan', description: 'Varas, molinetes e acessórios para pescadores de todos os níveis.' },
+  { id: '14', name: 'Pet Shop', slug: 'pet-shop', icon: 'PawPrint', color: 'purple', description: 'Rações, brinquedos e acessórios para seus pets.' },
+  { id: '15', name: 'Brinquedos', slug: 'brinquedos', icon: 'Blocks', color: 'wine', description: 'Diversão garantida para crianças de todas as idades.' },
 ];
 
 export const products: Product[] = [

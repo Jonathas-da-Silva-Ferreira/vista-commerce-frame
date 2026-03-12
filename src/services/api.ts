@@ -35,6 +35,7 @@ class ApiService {
     if (filters?.sortBy) params.append('sortBy', filters.sortBy);
     if (filters?.featured) params.append('featured', 'true');
     if (filters?.promotion) params.append('promotion', 'true');
+    if (filters?.minRating) params.append('minRating', String(filters.minRating));
 
     return this.request<PaginatedResponse<Product>>(`/api/products?${params}`);
   }
