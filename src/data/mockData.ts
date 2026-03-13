@@ -5,21 +5,21 @@
 import type { Product, Category, PaginatedResponse } from '@/types';
 
 export const categories: Category[] = [
-  { id: '1', name: 'Melhores Produtos', slug: 'melhores-produtos', icon: 'Award', color: 'gold', description: 'Os produtos mais bem avaliados e recomendados pelos nossos clientes.' },
-  { id: '2', name: 'Promoção', slug: 'promocao', icon: 'Tag', color: 'red', description: 'Aproveite descontos exclusivos por tempo limitado.' },
-  { id: '3', name: 'Casa', slug: 'casa', icon: 'Home', color: 'orange', description: 'Tudo para deixar sua casa mais bonita e funcional.' },
-  { id: '4', name: 'Peças Automotivas', slug: 'pecas-automotivas', icon: 'Car', color: 'olive', description: 'Peças e acessórios para manutenção e personalização do seu veículo.' },
-  { id: '5', name: 'Livros', slug: 'livros', icon: 'BookOpen', color: 'brown', description: 'Explore best-sellers, lançamentos e clássicos da literatura.' },
-  { id: '6', name: 'Ferramentas', slug: 'ferramentas', icon: 'Wrench', color: 'indigo', description: 'Ferramentas profissionais e domésticas para qualquer projeto.' },
-  { id: '7', name: 'Modas', slug: 'modas', icon: 'Shirt', color: 'green-dark', description: 'Tendências e peças essenciais para o seu guarda-roupa.' },
-  { id: '8', name: 'Componentes de Computador', slug: 'componentes-computador', icon: 'Monitor', color: 'magenta', description: 'Hardware e periféricos para montar ou atualizar seu PC.' },
-  { id: '9', name: 'Eletrônicos', slug: 'eletronicos', icon: 'Headphones', color: 'blue', description: 'Gadgets, smartphones e acessórios eletrônicos.' },
-  { id: '10', name: 'Esportes', slug: 'esportes', icon: 'Dumbbell', color: 'teal', description: 'Equipamentos e acessórios para todas as modalidades esportivas.' },
-  { id: '11', name: 'Cozinha', slug: 'cozinha', icon: 'ChefHat', color: 'crimson', description: 'Utensílios e eletrodomésticos para facilitar o dia a dia na cozinha.' },
-  { id: '12', name: 'Aventura', slug: 'aventura', icon: 'Tent', color: 'khaki', description: 'Equipamentos para camping, trilhas e atividades ao ar livre.' },
-  { id: '13', name: 'Pesca', slug: 'pesca', icon: 'Fish', color: 'cyan', description: 'Varas, molinetes e acessórios para pescadores de todos os níveis.' },
-  { id: '14', name: 'Pet Shop', slug: 'pet-shop', icon: 'PawPrint', color: 'purple', description: 'Rações, brinquedos e acessórios para seus pets.' },
-  { id: '15', name: 'Brinquedos', slug: 'brinquedos', icon: 'Blocks', color: 'wine', description: 'Diversão garantida para crianças de todas as idades.' },
+  { id: '1', name: 'Melhores Produtos', slug: 'melhores-produtos', icon: 'Award', color: 'gold', description: 'Os produtos mais bem avaliados e recomendados pelos nossos clientes.', subcategories: ['Top 10', 'Recomendados', 'Mais Vendidos'] },
+  { id: '2', name: 'Promoção', slug: 'promocao', icon: 'Tag', color: 'red', description: 'Aproveite descontos exclusivos por tempo limitado.', subcategories: ['Até 30% OFF', 'Até 50% OFF', 'Liquidação'] },
+  { id: '3', name: 'Casa', slug: 'casa', icon: 'Home', color: 'orange', description: 'Tudo para deixar sua casa mais bonita e funcional.', subcategories: ['Móveis', 'Decoração', 'Iluminação', 'Organização'] },
+  { id: '4', name: 'Peças Automotivas', slug: 'pecas-automotivas', icon: 'Car', color: 'olive', description: 'Peças e acessórios para manutenção e personalização do seu veículo.', subcategories: ['Motor', 'Suspensão', 'Elétrica', 'Acessórios'] },
+  { id: '5', name: 'Livros', slug: 'livros', icon: 'BookOpen', color: 'brown', description: 'Explore best-sellers, lançamentos e clássicos da literatura.', subcategories: ['Fantasia', 'Romance', 'Tecnologia', 'Negócios'] },
+  { id: '6', name: 'Ferramentas', slug: 'ferramentas', icon: 'Wrench', color: 'indigo', description: 'Ferramentas profissionais e domésticas para qualquer projeto.', subcategories: ['Manuais', 'Elétricas', 'Medição', 'Acessórios'] },
+  { id: '7', name: 'Modas', slug: 'modas', icon: 'Shirt', color: 'green-dark', description: 'Tendências e peças essenciais para o seu guarda-roupa.', subcategories: ['Camisetas', 'Calças', 'Vestidos', 'Acessórios'] },
+  { id: '8', name: 'Componentes de Computador', slug: 'componentes-computador', icon: 'Monitor', color: 'magenta', description: 'Hardware e periféricos para montar ou atualizar seu PC.', subcategories: ['Processadores', 'Placas de Vídeo', 'Memória RAM', 'Armazenamento'] },
+  { id: '9', name: 'Eletrônicos', slug: 'eletronicos', icon: 'Headphones', color: 'blue', description: 'Gadgets, smartphones e acessórios eletrônicos.', subcategories: ['Smartphones', 'Fones', 'Tablets', 'Acessórios'] },
+  { id: '10', name: 'Esportes', slug: 'esportes', icon: 'Dumbbell', color: 'teal', description: 'Equipamentos e acessórios para todas as modalidades esportivas.', subcategories: ['Musculação', 'Corrida', 'Natação', 'Futebol'] },
+  { id: '11', name: 'Cozinha', slug: 'cozinha', icon: 'ChefHat', color: 'crimson', description: 'Utensílios e eletrodomésticos para facilitar o dia a dia na cozinha.', subcategories: ['Panelas', 'Utensílios', 'Eletrodomésticos', 'Organização'] },
+  { id: '12', name: 'Aventura', slug: 'aventura', icon: 'Tent', color: 'khaki', description: 'Equipamentos para camping, trilhas e atividades ao ar livre.', subcategories: ['Barracas', 'Mochilas', 'Iluminação', 'Vestuário'] },
+  { id: '13', name: 'Pesca', slug: 'pesca', icon: 'Fish', color: 'cyan', description: 'Varas, molinetes e acessórios para pescadores de todos os níveis.', subcategories: ['Varas', 'Molinetes', 'Iscas', 'Linhas'] },
+  { id: '14', name: 'Pet Shop', slug: 'pet-shop', icon: 'PawPrint', color: 'purple', description: 'Rações, brinquedos e acessórios para seus pets.', subcategories: ['Ração', 'Brinquedos', 'Higiene', 'Acessórios'] },
+  { id: '15', name: 'Brinquedos', slug: 'brinquedos', icon: 'Blocks', color: 'wine', description: 'Diversão garantida para crianças de todas as idades.', subcategories: ['Educativos', 'Bonecas', 'Veículos', 'Jogos'] },
 ];
 
 export const products: Product[] = [
