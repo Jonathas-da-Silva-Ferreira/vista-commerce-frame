@@ -50,7 +50,7 @@ export default function FilterSidebar({
   onClose,
 }: FilterSidebarProps) {
   const ratingOptions = [4, 3, 2, 1];
-
+  const activeCategoryData = categories.find(c => c.slug === activeCategory);
   return (
     <div className="space-y-6">
       {/* Categories */}
