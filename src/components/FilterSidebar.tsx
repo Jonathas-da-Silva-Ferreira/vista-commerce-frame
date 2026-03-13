@@ -40,6 +40,7 @@ export const defaultFilterState: FilterState = {
   priceRange: [0, 5000],
   sortBy: 'relevance',
   minRating: 0,
+  subcategory: '',
 };
 
 export default function FilterSidebar({
