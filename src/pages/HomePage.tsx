@@ -34,7 +34,7 @@ export default function HomePage() {
         </section>
 
         <section>
-          <h2 className="text-2xl font-bold mb-4">Promoções</h2>
+          <Link to="/produtos?categoria=promocao" className="text-2xl font-bold mb-4 hover:underline inline-block">Promoções</Link>
           <ProductGrid products={promotionProducts} loading={promoLoading} />
         </section>
       </div>
