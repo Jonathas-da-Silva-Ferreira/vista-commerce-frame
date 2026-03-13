@@ -23,6 +23,7 @@ export interface Category {
   color: string;
   description?: string;
   productCount?: number;
+  subcategories?: string[];
 }
 
 export interface CartItem {
