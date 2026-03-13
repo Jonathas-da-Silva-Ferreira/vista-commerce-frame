@@ -24,6 +24,7 @@ export interface FilterState {
   priceRange: [number, number];
   sortBy: string;
   minRating: number;
+  subcategory: string;
 }
 
 interface FilterSidebarProps {
@@ -39,6 +40,7 @@ export const defaultFilterState: FilterState = {
   priceRange: [0, 5000],
   sortBy: 'relevance',
   minRating: 0,
+  subcategory: '',
 };
 
 export default function FilterSidebar({
@@ -91,10 +93,17 @@ export default function FilterSidebar({
           </CollapsibleTrigger>
           <CollapsibleContent>
             <div className="space-y-1">
+              <button
+                onClick={() => onFiltersChange({ subcategory: '' })}
+                className={`block w-full text-left py-2 px-3 rounded-lg transition-colors text-sm ${!filters.subcategory ? 'bg-primary text-primary-foreground font-medium' : 'hover:bg-muted'}`}
+              >
+                Todas
+              </button>
               {activeCategoryData.subcategories.map((sub) => (
                 <button
                   key={sub}
-                  className="block w-full text-left py-2 px-3 rounded-lg transition-colors text-sm hover:bg-muted"
+                  onClick={() => onFiltersChange({ subcategory: sub })}
+                  className={`block w-full text-left py-2 px-3 rounded-lg transition-colors text-sm ${filters.subcategory === sub ? 'bg-primary text-primary-foreground font-medium' : 'hover:bg-muted'}`}
                 >
                   {sub}
                 </button>
