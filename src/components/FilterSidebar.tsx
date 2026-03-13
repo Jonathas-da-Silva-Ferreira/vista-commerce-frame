@@ -50,10 +50,10 @@ export default function FilterSidebar({
   onClose,
 }: FilterSidebarProps) {
   const ratingOptions = [4, 3, 2, 1];
-
+  const activeCategoryData = categories.find(c => c.slug === activeCategory);
   return (
     <div className="space-y-6">
-      {/* Subcategories */}
+      {/* Categories */}
       <Collapsible defaultOpen>
         <CollapsibleTrigger className="flex items-center justify-between w-full font-semibold mb-3 hover:text-primary transition-colors">
           Categorias
@@ -81,6 +81,28 @@ export default function FilterSidebar({
           </div>
         </CollapsibleContent>
       </Collapsible>
+
+      {/* Subcategories for active category */}
+      {activeCategoryData?.subcategories && activeCategoryData.subcategories.length > 0 && (
+        <Collapsible defaultOpen>
+          <CollapsibleTrigger className="flex items-center justify-between w-full font-semibold mb-3 hover:text-primary transition-colors">
+            Subcategorias
+            <ChevronDown className="w-4 h-4 transition-transform data-[state=open]:rotate-180" />
+          </CollapsibleTrigger>
+          <CollapsibleContent>
+            <div className="space-y-1">
+              {activeCategoryData.subcategories.map((sub) => (
+                <button
+                  key={sub}
+                  className="block w-full text-left py-2 px-3 rounded-lg transition-colors text-sm hover:bg-muted"
+                >
+                  {sub}
+                </button>
+              ))}
+            </div>
+          </CollapsibleContent>
+        </Collapsible>
+      )}
 
       {/* Price Range */}
       <Collapsible defaultOpen>
