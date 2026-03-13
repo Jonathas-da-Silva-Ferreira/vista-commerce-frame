@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import MainLayout from '@/components/layout/MainLayout';
 import SearchBar from '@/components/SearchBar';
 import Banner from '@/components/Banner';
