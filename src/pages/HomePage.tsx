@@ -29,7 +29,7 @@ export default function HomePage() {
         </section>
 
         <section>
-          <h2 className="text-2xl font-bold mb-4">Produtos em Destaque</h2>
+          <Link to="/produtos?categoria=melhores-produtos" className="text-2xl font-bold mb-4 hover:underline inline-block">Produtos em Destaque</Link>
           <ProductGrid products={featuredProducts} loading={featLoading} />
         </section>
 
