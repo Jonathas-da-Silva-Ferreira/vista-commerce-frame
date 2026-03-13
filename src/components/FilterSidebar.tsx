@@ -24,6 +24,7 @@ export interface FilterState {
   priceRange: [number, number];
   sortBy: string;
   minRating: number;
+  subcategory: string;
 }
 
 interface FilterSidebarProps {
