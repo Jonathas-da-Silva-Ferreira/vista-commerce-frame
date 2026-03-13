@@ -43,6 +43,7 @@ export default function ProductsPage() {
   const totalPages = Math.ceil(total / ITEMS_PER_PAGE);
 
   useEffect(() => { setCurrentPage(1); }, [categorySlug, query, filterState]);
+  useEffect(() => { setFilterState(prev => ({ ...prev, subcategory: '' })); }, [categorySlug]);
 
   const handleSearch = (newQuery: string) => {
     const params = new URLSearchParams(searchParams);
