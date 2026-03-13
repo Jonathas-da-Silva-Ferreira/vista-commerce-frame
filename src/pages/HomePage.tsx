@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import MainLayout from '@/components/layout/MainLayout';
 import SearchBar from '@/components/SearchBar';
 import Banner from '@/components/Banner';
@@ -28,12 +29,12 @@ export default function HomePage() {
         </section>
 
         <section>
-          <h2 className="text-2xl font-bold mb-4">Produtos em Destaque</h2>
+          <Link to="/produtos?categoria=melhores-produtos" className="text-2xl font-bold mb-4 hover:underline inline-block">Produtos em Destaque</Link>
           <ProductGrid products={featuredProducts} loading={featLoading} />
         </section>
 
         <section>
-          <h2 className="text-2xl font-bold mb-4">Promoções</h2>
+          <Link to="/produtos?categoria=promocao" className="text-2xl font-bold mb-4 hover:underline inline-block">Promoções</Link>
           <ProductGrid products={promotionProducts} loading={promoLoading} />
         </section>
       </div>
