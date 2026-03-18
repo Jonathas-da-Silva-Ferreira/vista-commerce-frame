@@ -150,6 +150,46 @@ const routes: Array<{ pattern: RegExp; handler: RouteHandler }> = [
       );
     },
   },
+  // POST /api/products — create product
+  {
+    pattern: /^\/api\/products$/,
+    handler: async (_url, init) => {
+      if (init?.method !== 'POST') return json({ error: 'Method not allowed' }, 405);
+      await delay(300);
+      const body = JSON.parse((init?.body as string) || '{}');
+      const newProduct: Product = {
+        id: crypto.randomUUID(),
+        name: body.name,
+        description: body.description,
+        price: Number(body.price),
+        image: body.image,
+        category: body.category,
+        subcategory: body.subcategory,
+        rating: 0,
+        reviewCount: 0,
+        seller: body.seller || 'Vendedor',
+        stock: Number(body.stock),
+        sellerId: body.sellerId,
+      };
+      products.unshift(newProduct);
+      return json(newProduct, 201);
+    },
+  },
+  // PATCH /api/products/:id — update stock
+  {
+    pattern: /^\/api\/products\/([^/?]+)\/stock$/,
+    handler: async (url, init) => {
+      if (init?.method !== 'PATCH') return json({ error: 'Method not allowed' }, 405);
+      await delay(150);
+      const id = url.pathname.match(/\/api\/products\/([^/?]+)\/stock$/)?.[1];
+      const product = products.find(p => p.id === id);
+      if (!product) return json({ error: 'Product not found' }, 404);
+      const body = JSON.parse((init?.body as string) || '{}');
+      const decrement = Number(body.quantity) || 1;
+      product.stock = Math.max(0, product.stock - decrement);
+      return json(product);
+    },
+  },
 ];
 
 function matchRoute(pathname: string): ((url: URL, init?: RequestInit) => Promise<Response>) | null {
