@@ -210,8 +210,22 @@ export function installMockServer() {
     const url = new URL(typeof input === 'string' ? input : input instanceof Request ? input.url : input.toString(), window.location.origin);
 
     if (url.pathname.startsWith('/api/')) {
+      // Try exact path first, then check with method-aware routes
       const handler = matchRoute(url.pathname);
       if (handler) {
+        // For POST to /api/products, the GET route also matches — prefer POST handler
+        if (init?.method === 'POST' || init?.method === 'PATCH') {
+          // Find a handler that supports the method
+          for (const route of routes) {
+            if (route.pattern.test(url.pathname)) {
+              const res = await route.handler(url, init);
+              if (res.status !== 405) {
+                console.debug(`[MockServer] ${init.method} ${url.pathname}`);
+                return res;
+              }
+            }
+          }
+        }
         console.debug(`[MockServer] ${url.pathname}${url.search}`);
         return handler(url, init);
       }
