@@ -148,7 +148,7 @@ export default function CartPage() {
                 </div>
               </div>
 
-              <Button className="w-full" size="lg">
+              <Button className="w-full" size="lg" onClick={handleCheckout}>
                 Finalizar Compra
                 <ArrowRight className="w-5 h-5 ml-2" />
               </Button>
