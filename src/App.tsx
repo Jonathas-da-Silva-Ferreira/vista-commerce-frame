@@ -36,6 +36,7 @@ const App = () => (
                 <Route path="/carrinho" element={<CartPage />} />
                 <Route path="/favoritos" element={<FavoritesPage />} />
                 <Route path="/login" element={<LoginPage />} />
+                <Route path="/vender" element={<SellProductPage />} />
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />
               </Routes>
