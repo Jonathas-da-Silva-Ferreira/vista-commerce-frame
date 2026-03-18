@@ -127,10 +127,20 @@ export default function Header() {
         {mobileMenuOpen && (
           <nav className="lg:hidden py-4 border-t border-border animate-slide-up">
             <div className="flex flex-col gap-4">
-              <Link to="/login" className="flex items-center gap-3 p-2 hover:bg-muted rounded-lg" onClick={() => setMobileMenuOpen(false)}>
-                <User className="w-5 h-5" />
-                <span>Cadastrar / Login</span>
-              </Link>
+              {isAuthenticated ? (
+                <div className="flex items-center justify-between p-2 hover:bg-muted rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <User className="w-5 h-5" />
+                    <span>{user?.name}</span>
+                  </div>
+                  <button onClick={() => { logout(); setMobileMenuOpen(false); }} className="text-sm text-muted-foreground hover:text-foreground">Sair</button>
+                </div>
+              ) : (
+                <Link to="/login" className="flex items-center gap-3 p-2 hover:bg-muted rounded-lg" onClick={() => setMobileMenuOpen(false)}>
+                  <User className="w-5 h-5" />
+                  <span>Entrar / Cadastrar</span>
+                </Link>
+              )}
               <Link to="/vender" className="flex items-center gap-3 p-2 hover:bg-muted rounded-lg" onClick={() => setMobileMenuOpen(false)}>
                 <DollarSign className="w-5 h-5" />
                 <span>Vender</span>
