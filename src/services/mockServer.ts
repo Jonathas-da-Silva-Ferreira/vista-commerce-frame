@@ -2,8 +2,11 @@
  * Simulated REST server that intercepts fetch calls when no backend is configured.
  * Mirrors real API contract so switching to a real backend requires only setting VITE_API_URL.
  */
-import { products, categories } from '@/data/mockData';
+import { products as initialProducts, categories } from '@/data/mockData';
 import type { Product, Banner, PaginatedResponse } from '@/types';
+
+// Mutable copy so POST / PATCH can modify
+const products: Product[] = [...initialProducts];
 
 const delay = (ms = 150) => new Promise(r => setTimeout(r, ms));
 
