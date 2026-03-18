@@ -24,7 +24,7 @@ export default function LoginPage() {
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Login:', loginData);
+    login(loginData.email, loginData.password);
     toast.success('Login realizado com sucesso!');
     navigate('/');
   };
