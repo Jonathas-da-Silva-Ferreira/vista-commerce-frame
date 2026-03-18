@@ -30,6 +30,7 @@ export default function ProductsPage() {
 
   const filters = useMemo(() => ({
     category: isSpecialCategory ? undefined : categorySlug || undefined,
+    subcategory: filterState.subcategory || undefined,
     query: query || undefined,
     minPrice: filterState.priceRange[0],
     maxPrice: filterState.priceRange[1],

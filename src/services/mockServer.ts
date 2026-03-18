@@ -31,6 +31,7 @@ const routes: Array<{ pattern: RegExp; handler: RouteHandler }> = [
       const limit = Number(url.searchParams.get('limit') || '12');
       const q = url.searchParams.get('q')?.toLowerCase();
       const category = url.searchParams.get('category');
+      const subcategory = url.searchParams.get('subcategory');
       const minPrice = url.searchParams.get('minPrice') ? Number(url.searchParams.get('minPrice')) : undefined;
       const maxPrice = url.searchParams.get('maxPrice') ? Number(url.searchParams.get('maxPrice')) : undefined;
       const sortBy = url.searchParams.get('sortBy');
@@ -42,6 +43,7 @@ const routes: Array<{ pattern: RegExp; handler: RouteHandler }> = [
       if (featured === 'true') filtered = filtered.filter(p => p.isFeatured);
       if (promotion === 'true') filtered = filtered.filter(p => p.isPromotion);
       if (category) filtered = filtered.filter(p => p.category === category);
+      if (subcategory) filtered = filtered.filter(p => p.subcategory === subcategory);
       if (q) filtered = filtered.filter(p => p.name.toLowerCase().includes(q) || p.description.toLowerCase().includes(q));
       if (minPrice !== undefined) filtered = filtered.filter(p => p.price >= minPrice);
       if (maxPrice !== undefined) filtered = filtered.filter(p => p.price <= maxPrice);
