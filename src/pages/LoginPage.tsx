@@ -39,7 +39,7 @@ export default function LoginPage() {
       toast.error('A senha deve ter pelo menos 6 caracteres');
       return;
     }
-    console.log('Register:', registerData);
+    authRegister(registerData.name, registerData.email, registerData.password);
     toast.success('Conta criada com sucesso!');
     navigate('/');
   };

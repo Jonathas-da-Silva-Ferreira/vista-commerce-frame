@@ -12,6 +12,7 @@ export interface Product {
   reviewCount: number;
   seller: string;
   stock: number;
+  sellerId?: string;
   isFeatured?: boolean;
   isPromotion?: boolean;
 }
