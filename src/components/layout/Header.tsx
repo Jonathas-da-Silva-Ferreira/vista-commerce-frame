@@ -15,6 +15,7 @@ import {
 import { useTheme } from '@/contexts/ThemeContext';
 import { useCart } from '@/contexts/CartContext';
 import { useFavorites } from '@/contexts/FavoritesContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 
 interface HeaderLinkProps {
@@ -47,6 +48,7 @@ export default function Header() {
   const { theme, toggleTheme } = useTheme();
   const { itemCount } = useCart();
   const { favorites } = useFavorites();
+  const { user, isAuthenticated, logout } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
@@ -63,7 +65,15 @@ export default function Header() {
 
           {/* Desktop Navigation */}
           <nav className="hidden lg:flex items-center gap-6">
-            <HeaderLink to="/login" icon={<User className="w-6 h-6" />} label="Cadastrar / Login" />
+            {isAuthenticated ? (
+              <div className="flex flex-col items-center gap-1 text-foreground/80">
+                <User className="w-6 h-6" />
+                <span className="text-xs font-medium">{user?.name?.split(' ')[0]}</span>
+                <button onClick={logout} className="text-[10px] text-muted-foreground hover:text-foreground">Sair</button>
+              </div>
+            ) : (
+              <HeaderLink to="/login" icon={<User className="w-6 h-6" />} label="Entrar" />
+            )}
             <HeaderLink to="/vender" icon={<DollarSign className="w-6 h-6" />} label="Vender" />
             <HeaderLink to="/contato" icon={<Mail className="w-6 h-6" />} label="Contato" />
             <HeaderLink to="/favoritos" icon={<Heart className="w-6 h-6" />} label="Favoritos" badge={favorites.length} />
@@ -117,10 +127,20 @@ export default function Header() {
         {mobileMenuOpen && (
           <nav className="lg:hidden py-4 border-t border-border animate-slide-up">
             <div className="flex flex-col gap-4">
-              <Link to="/login" className="flex items-center gap-3 p-2 hover:bg-muted rounded-lg" onClick={() => setMobileMenuOpen(false)}>
-                <User className="w-5 h-5" />
-                <span>Cadastrar / Login</span>
-              </Link>
+              {isAuthenticated ? (
+                <div className="flex items-center justify-between p-2 hover:bg-muted rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <User className="w-5 h-5" />
+                    <span>{user?.name}</span>
+                  </div>
+                  <button onClick={() => { logout(); setMobileMenuOpen(false); }} className="text-sm text-muted-foreground hover:text-foreground">Sair</button>
+                </div>
+              ) : (
+                <Link to="/login" className="flex items-center gap-3 p-2 hover:bg-muted rounded-lg" onClick={() => setMobileMenuOpen(false)}>
+                  <User className="w-5 h-5" />
+                  <span>Entrar / Cadastrar</span>
+                </Link>
+              )}
               <Link to="/vender" className="flex items-center gap-3 p-2 hover:bg-muted rounded-lg" onClick={() => setMobileMenuOpen(false)}>
                 <DollarSign className="w-5 h-5" />
                 <span>Vender</span>

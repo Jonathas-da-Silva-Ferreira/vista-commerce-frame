@@ -4,9 +4,29 @@ import MainLayout from '@/components/layout/MainLayout';
 import { Button } from '@/components/ui/button';
 import { useCart } from '@/contexts/CartContext';
 import { formatCurrency } from '@/lib/utils';
+import { toast } from 'sonner';
 
 export default function CartPage() {
   const { items, total, updateQuantity, removeItem, clearCart } = useCart();
+
+  const handleCheckout = async () => {
+    try {
+      // Decrement stock for each item
+      await Promise.all(
+        items.map(item =>
+          fetch(`/api/products/${item.product.id}/stock`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ quantity: item.quantity }),
+          })
+        )
+      );
+      clearCart();
+      toast.success('Compra finalizada com sucesso! Estoque atualizado.');
+    } catch {
+      toast.error('Erro ao finalizar compra. Tente novamente.');
+    }
+  };
 
   if (items.length === 0) {
     return (
@@ -128,7 +148,7 @@ export default function CartPage() {
                 </div>
               </div>
 
-              <Button className="w-full" size="lg">
+              <Button className="w-full" size="lg" onClick={handleCheckout}>
                 Finalizar Compra
                 <ArrowRight className="w-5 h-5 ml-2" />
               </Button>

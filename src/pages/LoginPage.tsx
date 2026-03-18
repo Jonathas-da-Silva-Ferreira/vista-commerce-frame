@@ -8,9 +8,11 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
 import { toast } from 'sonner';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function LoginPage() {
   const navigate = useNavigate();
+  const { login, register: authRegister } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [loginData, setLoginData] = useState({ email: '', password: '' });
   const [registerData, setRegisterData] = useState({
@@ -22,7 +24,7 @@ export default function LoginPage() {
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Login:', loginData);
+    login(loginData.email, loginData.password);
     toast.success('Login realizado com sucesso!');
     navigate('/');
   };
@@ -37,7 +39,7 @@ export default function LoginPage() {
       toast.error('A senha deve ter pelo menos 6 caracteres');
       return;
     }
-    console.log('Register:', registerData);
+    authRegister(registerData.name, registerData.email, registerData.password);
     toast.success('Conta criada com sucesso!');
     navigate('/');
   };
