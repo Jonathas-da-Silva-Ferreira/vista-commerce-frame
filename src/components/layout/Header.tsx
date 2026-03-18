@@ -65,7 +65,15 @@ export default function Header() {
 
           {/* Desktop Navigation */}
           <nav className="hidden lg:flex items-center gap-6">
-            <HeaderLink to="/login" icon={<User className="w-6 h-6" />} label="Cadastrar / Login" />
+            {isAuthenticated ? (
+              <div className="flex flex-col items-center gap-1 text-foreground/80">
+                <User className="w-6 h-6" />
+                <span className="text-xs font-medium">{user?.name?.split(' ')[0]}</span>
+                <button onClick={logout} className="text-[10px] text-muted-foreground hover:text-foreground">Sair</button>
+              </div>
+            ) : (
+              <HeaderLink to="/login" icon={<User className="w-6 h-6" />} label="Entrar" />
+            )}
             <HeaderLink to="/vender" icon={<DollarSign className="w-6 h-6" />} label="Vender" />
             <HeaderLink to="/contato" icon={<Mail className="w-6 h-6" />} label="Contato" />
             <HeaderLink to="/favoritos" icon={<Heart className="w-6 h-6" />} label="Favoritos" badge={favorites.length} />
