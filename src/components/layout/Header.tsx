@@ -48,6 +48,7 @@ export default function Header() {
   const { theme, toggleTheme } = useTheme();
   const { itemCount } = useCart();
   const { favorites } = useFavorites();
+  const { user, isAuthenticated, logout } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
