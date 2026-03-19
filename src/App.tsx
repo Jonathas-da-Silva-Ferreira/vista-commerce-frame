@@ -38,6 +38,7 @@ const App = () => (
                 <Route path="/favoritos" element={<FavoritesPage />} />
                 <Route path="/login" element={<LoginPage />} />
                 <Route path="/vender" element={<SellProductPage />} />
+                <Route path="/contato" element={<ContactPage />} />
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />
               </Routes>

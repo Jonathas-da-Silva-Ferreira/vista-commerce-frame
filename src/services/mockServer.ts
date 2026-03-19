@@ -190,6 +190,18 @@ const routes: Array<{ pattern: RegExp; handler: RouteHandler }> = [
       return json(product);
     },
   },
+
+  // POST /api/contact
+  {
+    pattern: /^\/api\/contact$/,
+    handler: async (_url: URL, init?: RequestInit) => {
+      if (init?.method !== 'POST') return json({ error: 'Method not allowed' }, 405);
+      await delay(300);
+      const body = JSON.parse(init.body as string);
+      console.debug('[MockServer] Contact received:', body);
+      return json({ success: true, message: 'Mensagem recebida com sucesso' }, 201);
+    },
+  },
 ];
 
 function matchRoute(pathname: string): ((url: URL, init?: RequestInit) => Promise<Response>) | null {
