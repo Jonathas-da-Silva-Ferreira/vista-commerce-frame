@@ -19,9 +19,9 @@ const json = (data: unknown, status = 200) =>
   });
 
 const banners: Banner[] = [
-  { id: '1', title: 'Ofertas Imperdíveis', subtitle: 'Até 60% de desconto em eletrônicos', bgColor: 'hsl(220 70% 50%)', link: '/products?category=eletronicos' },
-  { id: '2', title: 'Novidades em Moda', subtitle: 'Coleção Verão 2026 chegou!', bgColor: 'hsl(340 65% 47%)', link: '/products?category=modas' },
-  { id: '3', title: 'Frete Grátis', subtitle: 'Em compras acima de R$ 199', bgColor: 'hsl(150 60% 35%)' },
+  { id: '1', title: 'Ofertas Imperdíveis', subtitle: 'Até 60% de desconto em eletrônicos', bgColor: 'hsl(220 70% 50%)', image: '/src/assets/banner-eletronicos.jpg', link: '/produtos?categoria=eletronicos', buttonText: 'Ver ofertas' },
+  { id: '2', title: 'Novidades em Moda', subtitle: 'Coleção Verão 2026 chegou!', bgColor: 'hsl(340 65% 47%)', image: '/src/assets/banner-moda.jpg', link: '/produtos?categoria=modas', buttonText: 'Comprar agora' },
+  { id: '3', title: 'Frete Grátis', subtitle: 'Em compras acima de R$ 199', bgColor: 'hsl(150 60% 35%)', image: '/src/assets/banner-frete.jpg', link: '/produtos', buttonText: 'Aproveitar' },
 ];
 
 const routes: Array<{ pattern: RegExp; handler: RouteHandler }> = [
