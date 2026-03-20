@@ -69,4 +69,5 @@ export interface Banner {
   bgColor: string;
   image?: string;
   link?: string;
+  buttonText?: string;
 }
