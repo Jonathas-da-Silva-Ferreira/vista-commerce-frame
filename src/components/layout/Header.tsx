@@ -64,6 +64,11 @@ export default function Header() {
             <span className="font-bold text-xl hidden sm:block">MarketBR</span>
           </Link>
 
+          {/* Location */}
+          <div className="hidden md:block">
+            <LocationSelector />
+          </div>
+
           {/* Desktop Navigation */}
           <nav className="hidden lg:flex items-center gap-6">
             {isAuthenticated ? (
@@ -79,7 +84,6 @@ export default function Header() {
             <HeaderLink to="/contato" icon={<Mail className="w-6 h-6" />} label="Contato" />
             <HeaderLink to="/favoritos" icon={<Heart className="w-6 h-6" />} label="Favoritos" badge={favorites.length} />
             <HeaderLink to="/carrinho" icon={<ShoppingCart className="w-6 h-6" />} label="Carrinho" badge={itemCount} />
-            <HeaderLink to="/localizacao" icon={<MapPin className="w-6 h-6" />} label="CEP / Localização" />
             
             <button
               onClick={toggleTheme}
