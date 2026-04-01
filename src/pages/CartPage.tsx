@@ -9,6 +9,8 @@ import { toast } from 'sonner';
 
 export default function CartPage() {
   const { items, total, updateQuantity, removeItem, clearCart } = useCart();
+  const { shipping } = useLocation();
+  const shippingCost = shipping?.isFreeShipping === false ? shipping.shippingCost : 0;
 
   const handleCheckout = async () => {
     try {
