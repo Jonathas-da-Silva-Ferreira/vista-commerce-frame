@@ -97,6 +97,7 @@ function ShippingCalculator() {
 }
 
 export default function ProductDetailPage() {
+  const { id } = useParams<{ id: string }>();
   const [quantity, setQuantity] = useState(1);
   const { addItem, isInCart } = useCart();
   const { toggleFavorite, isFavorite } = useFavorites();
