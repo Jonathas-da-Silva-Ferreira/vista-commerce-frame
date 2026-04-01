@@ -154,10 +154,9 @@ export default function Header() {
                 <Mail className="w-5 h-5" />
                 <span>Contato</span>
               </Link>
-              <Link to="/localizacao" className="flex items-center gap-3 p-2 hover:bg-muted rounded-lg" onClick={() => setMobileMenuOpen(false)}>
-                <MapPin className="w-5 h-5" />
-                <span>CEP / Localização</span>
-              </Link>
+              <div className="flex items-center gap-3 p-2">
+                <LocationSelector />
+              </div>
               <button
                 onClick={() => {
                   toggleTheme();
