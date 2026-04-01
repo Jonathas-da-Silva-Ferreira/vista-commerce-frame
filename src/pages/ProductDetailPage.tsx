@@ -46,7 +46,57 @@ function ImageGallery({ images, name }: { images: string[]; name: string }) {
   );
 }
 
-export default function ProductDetailPage() {
+function ShippingCalculator() {
+  const { location, shipping, loading: locLoading, error, calculateShipping } = useLocation();
+  const [cep, setCep] = useState('');
+
+  const formatCep = (v: string) => {
+    const d = v.replace(/\D/g, '').slice(0, 8);
+    return d.length > 5 ? `${d.slice(0, 5)}-${d.slice(5)}` : d;
+  };
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center gap-2">
+        <Truck className="w-5 h-5 text-primary" />
+        <span className="font-semibold text-sm">Calcular frete</span>
+      </div>
+      <form onSubmit={e => { e.preventDefault(); calculateShipping(cep); }} className="flex gap-2">
+        <Input placeholder="00000-000" value={cep} onChange={e => setCep(formatCep(e.target.value))} className="h-9" maxLength={9} />
+        <Button type="submit" variant="outline" size="sm" className="h-9" disabled={locLoading}>
+          {locLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Calcular'}
+        </Button>
+      </form>
+      {error && <p className="text-xs text-destructive">{error}</p>}
+      {shipping && (
+        <div className="flex items-center gap-2 text-sm">
+          {shipping.isFreeShipping ? (
+            <span className="font-semibold text-green-500">✓ Frete Grátis para {location?.city || location?.state}</span>
+          ) : (
+            <span>Frete para {location?.city}: <span className="font-semibold text-primary">R$ {shipping.shippingCost.toFixed(2)}</span></span>
+          )}
+        </div>
+      )}
+      {/* Trust badges */}
+      <div className="grid grid-cols-3 gap-3 pt-2">
+        <div className="flex flex-col items-center text-center gap-1.5 p-3 rounded-lg bg-muted/50">
+          <Shield className="w-5 h-5 text-primary" />
+          <span className="text-xs font-medium">Compra Segura</span>
+        </div>
+        <div className="flex flex-col items-center text-center gap-1.5 p-3 rounded-lg bg-muted/50">
+          <RotateCcw className="w-5 h-5 text-primary" />
+          <span className="text-xs font-medium">Devolução Grátis</span>
+        </div>
+        <div className="flex flex-col items-center text-center gap-1.5 p-3 rounded-lg bg-muted/50">
+          <Truck className="w-5 h-5 text-primary" />
+          <span className="text-xs font-medium">Entrega Rápida</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
   const { id } = useParams<{ id: string }>();
   const [quantity, setQuantity] = useState(1);
   const { addItem, isInCart } = useCart();
