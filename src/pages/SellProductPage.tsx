@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Package, DollarSign, Layers, Image, Store, Hash, FileText, ArrowLeft, LogIn } from 'lucide-react';
+import { Package, DollarSign, Layers, Image, Store, Hash, FileText, ArrowLeft, LogIn, Truck } from 'lucide-react';
 import MainLayout from '@/components/layout/MainLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
