@@ -162,11 +162,11 @@ export default function CartPage() {
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Frete</span>
-                  {shipping ? (
-                    shipping.isFreeShipping ? (
+                  {location ? (
+                    shippingCost === 0 ? (
                       <span className="text-green-600 font-medium">Grátis</span>
                     ) : (
-                      <span className="font-medium">{formatCurrency(shipping.shippingCost)}</span>
+                      <span className="font-medium">{formatCurrency(shippingCost)}</span>
                     )
                   ) : (
                     <span className="text-muted-foreground text-xs">Informe o CEP</span>
