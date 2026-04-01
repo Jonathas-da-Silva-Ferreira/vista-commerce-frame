@@ -117,7 +117,7 @@ export const products: Product[] = [
 const defaultShipping = { sul: 0, sudeste: 0, centroOeste: 0, norte: 25, nordeste: 20 };
 products.forEach(p => { if (!p.shipping) p.shipping = { ...defaultShipping }; });
 
-
+/**
  * Mock API that simulates REST endpoints.
  * Used as fallback when VITE_API_URL is not configured.
  */
