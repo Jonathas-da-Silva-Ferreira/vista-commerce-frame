@@ -251,7 +251,7 @@ export default function ProductDetailPage() {
             </div>
 
             {/* Shipping Calculator */}
-            <ShippingCalculator />
+            <ShippingCalculator productId={product.id} />
 
             {/* Quantity & Actions */}
             <div className="space-y-4 pt-2">
