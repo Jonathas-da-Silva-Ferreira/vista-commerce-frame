@@ -230,9 +230,36 @@ const routes: Array<{ pattern: RegExp; handler: RouteHandler }> = [
       if (init?.method !== 'POST') return json({ error: 'Method not allowed' }, 405);
       await delay(150);
       const body = JSON.parse((init?.body as string) || '{}');
-      const freeRegions = ['Sul', 'Sudeste', 'Centro-Oeste'];
-      const isFreeShipping = freeRegions.includes(body.region);
-      return json({ shippingCost: isFreeShipping ? 0 : 29.90, isFreeShipping });
+      const regionKey: Record<string, string> = {
+        'Sul': 'sul', 'Sudeste': 'sudeste', 'Centro-Oeste': 'centroOeste',
+        'Norte': 'norte', 'Nordeste': 'nordeste',
+      };
+      const key = regionKey[body.region] || 'sudeste';
+
+      // If productId provided, use product-level shipping
+      if (body.productId) {
+        const product = products.find(p => p.id === body.productId);
+        const shipping = product?.shipping || { sul: 0, sudeste: 0, centroOeste: 0, norte: 25, nordeste: 20 };
+        const cost = (shipping as Record<string, number>)[key] ?? 0;
+        return json({ shippingCost: cost, isFreeShipping: cost === 0 });
+      }
+
+      // If cart items provided, sum per-product shipping
+      if (body.items && Array.isArray(body.items)) {
+        let totalCost = 0;
+        for (const item of body.items) {
+          const product = products.find(p => p.id === item.productId);
+          const shipping = product?.shipping || { sul: 0, sudeste: 0, centroOeste: 0, norte: 25, nordeste: 20 };
+          const cost = (shipping as Record<string, number>)[key] ?? 0;
+          totalCost += cost;
+        }
+        return json({ shippingCost: totalCost, isFreeShipping: totalCost === 0 });
+      }
+
+      // Fallback: generic region-based
+      const defaultShipping: Record<string, number> = { sul: 0, sudeste: 0, centroOeste: 0, norte: 25, nordeste: 20 };
+      const cost = defaultShipping[key] ?? 0;
+      return json({ shippingCost: cost, isFreeShipping: cost === 0 });
     },
   },
   // POST /api/contact
