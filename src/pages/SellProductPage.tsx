@@ -223,6 +223,38 @@ export default function SellProductPage() {
                 </div>
               </div>
 
+              {/* Frete por região */}
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <Truck className="w-4 h-4 text-primary" />
+                  <Label className="text-base font-semibold">Frete por região (R$)</Label>
+                </div>
+                <p className="text-xs text-muted-foreground">Defina o valor do frete para cada região. Use 0 para frete grátis.</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                  {[
+                    { key: 'shippingSul', label: 'Sul (RS, SC, PR)' },
+                    { key: 'shippingSudeste', label: 'Sudeste (SP, RJ, MG, ES)' },
+                    { key: 'shippingCentroOeste', label: 'Centro-Oeste (GO, MT, MS, DF)' },
+                    { key: 'shippingNorte', label: 'Norte (AC, AP, AM, PA...)' },
+                    { key: 'shippingNordeste', label: 'Nordeste (BA, CE, PE...)' },
+                  ].map(({ key, label }) => (
+                    <div key={key} className="space-y-1">
+                      <Label htmlFor={key} className="text-xs">{label}</Label>
+                      <Input
+                        id={key}
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        placeholder="0,00"
+                        className="h-9"
+                        value={form[key as keyof typeof form]}
+                        onChange={e => updateField(key, e.target.value)}
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+
               <Button type="submit" size="lg" className="w-full" disabled={isSubmitting}>
                 {isSubmitting ? 'Cadastrando...' : 'Cadastrar Produto'}
               </Button>
