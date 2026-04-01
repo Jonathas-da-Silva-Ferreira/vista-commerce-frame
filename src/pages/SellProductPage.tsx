@@ -27,6 +27,11 @@ export default function SellProductPage() {
     stock: '',
     image: '',
     sellerName: '',
+    shippingSul: '0',
+    shippingSudeste: '0',
+    shippingCentroOeste: '0',
+    shippingNorte: '25',
+    shippingNordeste: '20',
   });
 
   const selectedCategory = categoryOptions.find(c => c.slug === form.category);
