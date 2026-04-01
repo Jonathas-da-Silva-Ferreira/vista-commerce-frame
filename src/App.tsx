@@ -7,6 +7,7 @@ import { ThemeProvider } from "@/contexts/ThemeContext";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { CartProvider } from "@/contexts/CartContext";
 import { FavoritesProvider } from "@/contexts/FavoritesContext";
+import { LocationProvider } from "@/contexts/LocationContext";
 
 import HomePage from "./pages/HomePage";
 import ProductsPage from "./pages/ProductsPage";
@@ -26,6 +27,7 @@ const App = () => (
       <AuthProvider>
         <CartProvider>
           <FavoritesProvider>
+          <LocationProvider>
           <TooltipProvider>
             <Toaster />
             <Sonner />
@@ -44,6 +46,7 @@ const App = () => (
               </Routes>
             </BrowserRouter>
           </TooltipProvider>
+          </LocationProvider>
           </FavoritesProvider>
         </CartProvider>
       </AuthProvider>

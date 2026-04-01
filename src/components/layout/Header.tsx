@@ -17,6 +17,7 @@ import { useCart } from '@/contexts/CartContext';
 import { useFavorites } from '@/contexts/FavoritesContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
+import LocationSelector from '@/components/LocationSelector';
 
 interface HeaderLinkProps {
   to: string;
@@ -63,6 +64,11 @@ export default function Header() {
             <span className="font-bold text-xl hidden sm:block">MarketBR</span>
           </Link>
 
+          {/* Location */}
+          <div className="hidden md:block">
+            <LocationSelector />
+          </div>
+
           {/* Desktop Navigation */}
           <nav className="hidden lg:flex items-center gap-6">
             {isAuthenticated ? (
@@ -78,7 +84,6 @@ export default function Header() {
             <HeaderLink to="/contato" icon={<Mail className="w-6 h-6" />} label="Contato" />
             <HeaderLink to="/favoritos" icon={<Heart className="w-6 h-6" />} label="Favoritos" badge={favorites.length} />
             <HeaderLink to="/carrinho" icon={<ShoppingCart className="w-6 h-6" />} label="Carrinho" badge={itemCount} />
-            <HeaderLink to="/localizacao" icon={<MapPin className="w-6 h-6" />} label="CEP / Localização" />
             
             <button
               onClick={toggleTheme}
@@ -149,10 +154,9 @@ export default function Header() {
                 <Mail className="w-5 h-5" />
                 <span>Contato</span>
               </Link>
-              <Link to="/localizacao" className="flex items-center gap-3 p-2 hover:bg-muted rounded-lg" onClick={() => setMobileMenuOpen(false)}>
-                <MapPin className="w-5 h-5" />
-                <span>CEP / Localização</span>
-              </Link>
+              <div className="flex items-center gap-3 p-2">
+                <LocationSelector />
+              </div>
               <button
                 onClick={() => {
                   toggleTheme();

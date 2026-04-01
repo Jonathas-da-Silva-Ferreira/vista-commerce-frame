@@ -3,11 +3,14 @@ import { Trash2, Minus, Plus, ShoppingBag, ArrowRight } from 'lucide-react';
 import MainLayout from '@/components/layout/MainLayout';
 import { Button } from '@/components/ui/button';
 import { useCart } from '@/contexts/CartContext';
+import { useLocation } from '@/contexts/LocationContext';
 import { formatCurrency } from '@/lib/utils';
 import { toast } from 'sonner';
 
 export default function CartPage() {
   const { items, total, updateQuantity, removeItem, clearCart } = useCart();
+  const { shipping } = useLocation();
+  const shippingCost = shipping?.isFreeShipping === false ? shipping.shippingCost : 0;
 
   const handleCheckout = async () => {
     try {
@@ -140,11 +143,19 @@ export default function CartPage() {
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Frete</span>
-                  <span className="text-green-600 font-medium">Grátis</span>
+                  {shipping ? (
+                    shipping.isFreeShipping ? (
+                      <span className="text-green-600 font-medium">Grátis</span>
+                    ) : (
+                      <span className="font-medium">{formatCurrency(shipping.shippingCost)}</span>
+                    )
+                  ) : (
+                    <span className="text-muted-foreground text-xs">Informe o CEP</span>
+                  )}
                 </div>
                 <div className="border-t pt-3 flex justify-between">
                   <span className="font-bold">Total</span>
-                  <span className="font-bold text-xl text-primary">{formatCurrency(total)}</span>
+                  <span className="font-bold text-xl text-primary">{formatCurrency(total + shippingCost)}</span>
                 </div>
               </div>
 
