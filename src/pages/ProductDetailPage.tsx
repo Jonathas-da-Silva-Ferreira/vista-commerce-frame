@@ -181,21 +181,8 @@ export default function ProductDetailPage() {
               <p className="text-muted-foreground leading-relaxed">{product.description}</p>
             </div>
 
-            {/* Trust Badges */}
-            <div className="grid grid-cols-3 gap-3">
-              <div className="flex flex-col items-center text-center gap-1.5 p-3 rounded-lg bg-muted/50">
-                <Truck className="w-5 h-5 text-primary" />
-                <span className="text-xs font-medium">Frete Grátis</span>
-              </div>
-              <div className="flex flex-col items-center text-center gap-1.5 p-3 rounded-lg bg-muted/50">
-                <Shield className="w-5 h-5 text-primary" />
-                <span className="text-xs font-medium">Compra Segura</span>
-              </div>
-              <div className="flex flex-col items-center text-center gap-1.5 p-3 rounded-lg bg-muted/50">
-                <RotateCcw className="w-5 h-5 text-primary" />
-                <span className="text-xs font-medium">Devolução Grátis</span>
-              </div>
-            </div>
+            {/* Shipping Calculator */}
+            <ShippingCalculator />
 
             {/* Quantity & Actions */}
             <div className="space-y-4 pt-2">
