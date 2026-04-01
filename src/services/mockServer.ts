@@ -191,6 +191,48 @@ const routes: Array<{ pattern: RegExp; handler: RouteHandler }> = [
     },
   },
 
+  // GET /api/location?cep=...
+  {
+    pattern: /^\/api\/location$/,
+    handler: async (url) => {
+      await delay(200);
+      const cep = url.searchParams.get('cep')?.replace(/\D/g, '') || '';
+      if (cep.length !== 8) return json({ error: 'CEP inválido' }, 400);
+
+      const cepStateMap: Record<string, { state: string; city: string }> = {
+        '0': { state: 'SP', city: 'São Paulo' }, '1': { state: 'SP', city: 'São Paulo' },
+        '2': { state: 'RJ', city: 'Rio de Janeiro' }, '3': { state: 'MG', city: 'Belo Horizonte' },
+        '4': { state: 'BA', city: 'Salvador' }, '5': { state: 'PE', city: 'Recife' },
+        '6': { state: 'PA', city: 'Belém' }, '7': { state: 'DF', city: 'Brasília' },
+        '8': { state: 'PR', city: 'Curitiba' }, '9': { state: 'RS', city: 'Porto Alegre' },
+      };
+
+      const stateRegionMap: Record<string, string> = {
+        RS: 'Sul', SC: 'Sul', PR: 'Sul',
+        SP: 'Sudeste', RJ: 'Sudeste', MG: 'Sudeste', ES: 'Sudeste',
+        GO: 'Centro-Oeste', MT: 'Centro-Oeste', MS: 'Centro-Oeste', DF: 'Centro-Oeste',
+        AC: 'Norte', AP: 'Norte', AM: 'Norte', PA: 'Norte', RO: 'Norte', RR: 'Norte', TO: 'Norte',
+        AL: 'Nordeste', BA: 'Nordeste', CE: 'Nordeste', MA: 'Nordeste', PB: 'Nordeste',
+        PE: 'Nordeste', PI: 'Nordeste', RN: 'Nordeste', SE: 'Nordeste',
+      };
+
+      const info = cepStateMap[cep[0]] || { state: 'SP', city: 'São Paulo' };
+      const region = stateRegionMap[info.state] || 'Sudeste';
+      return json({ cep, state: info.state, city: info.city, region });
+    },
+  },
+  // POST /api/shipping/calculate
+  {
+    pattern: /^\/api\/shipping\/calculate$/,
+    handler: async (_url, init) => {
+      if (init?.method !== 'POST') return json({ error: 'Method not allowed' }, 405);
+      await delay(150);
+      const body = JSON.parse((init?.body as string) || '{}');
+      const freeRegions = ['Sul', 'Sudeste', 'Centro-Oeste'];
+      const isFreeShipping = freeRegions.includes(body.region);
+      return json({ shippingCost: isFreeShipping ? 0 : 29.90, isFreeShipping });
+    },
+  },
   // POST /api/contact
   {
     pattern: /^\/api\/contact$/,

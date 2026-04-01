@@ -17,6 +17,7 @@ import { useCart } from '@/contexts/CartContext';
 import { useFavorites } from '@/contexts/FavoritesContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
+import LocationSelector from '@/components/LocationSelector';
 
 interface HeaderLinkProps {
   to: string;
