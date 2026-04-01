@@ -113,7 +113,11 @@ export const products: Product[] = [
   { id: '14', name: 'Kit Óleo Motor Sintético 5L', description: 'Óleo sintético 5W30 para motores modernos.', price: 189.90, originalPrice: 229.90, image: 'https://images.unsplash.com/photo-1487754180451-c456f719a1fc?w=600', category: 'pecas-automotivas', subcategory: 'Motor', rating: 4.7, reviewCount: 312, seller: 'AutoPeças', stock: 60, isPromotion: true },
 ];
 
-/**
+// Apply default shipping to all products
+const defaultShipping = { sul: 0, sudeste: 0, centroOeste: 0, norte: 25, nordeste: 20 };
+products.forEach(p => { if (!p.shipping) p.shipping = { ...defaultShipping }; });
+
+
  * Mock API that simulates REST endpoints.
  * Used as fallback when VITE_API_URL is not configured.
  */
