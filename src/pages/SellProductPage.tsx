@@ -95,6 +95,13 @@ export default function SellProductPage() {
           image: form.image.trim(),
           seller: form.sellerName.trim() || user?.name || 'Vendedor',
           sellerId: user?.id,
+          shipping: {
+            sul: parseFloat(form.shippingSul) || 0,
+            sudeste: parseFloat(form.shippingSudeste) || 0,
+            centroOeste: parseFloat(form.shippingCentroOeste) || 0,
+            norte: parseFloat(form.shippingNorte) || 0,
+            nordeste: parseFloat(form.shippingNordeste) || 0,
+          },
         }),
       });
       if (!res.ok) throw new Error('Falha ao cadastrar produto');
