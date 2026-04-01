@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { ChevronRight, Heart, Star, Minus, Plus, ShoppingCart, Truck, Shield, RotateCcw, CheckCircle2, Loader2 } from 'lucide-react';
 import MainLayout from '@/components/layout/MainLayout';
@@ -46,13 +46,33 @@ function ImageGallery({ images, name }: { images: string[]; name: string }) {
   );
 }
 
-function ShippingCalculator() {
-  const { location, shipping, loading: locLoading, error, calculateShipping } = useLocation();
+function ShippingCalculator({ productId }: { productId: string }) {
+  const { location, loading: locLoading, error, calculateShipping } = useLocation();
   const [cep, setCep] = useState('');
+  const [shippingResult, setShippingResult] = useState<{ shippingCost: number; isFreeShipping: boolean } | null>(null);
 
   const formatCep = (v: string) => {
     const d = v.replace(/\D/g, '').slice(0, 8);
     return d.length > 5 ? `${d.slice(0, 5)}-${d.slice(5)}` : d;
+  };
+
+  // Calculate product-specific shipping when location changes
+  useEffect(() => {
+    if (location) {
+      fetch('/api/shipping/calculate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ region: location.region, productId }),
+      })
+        .then(r => r.json())
+        .then(setShippingResult)
+        .catch(() => {});
+    }
+  }, [location, productId]);
+
+  const handleCalc = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await calculateShipping(cep);
   };
 
   return (
@@ -61,23 +81,22 @@ function ShippingCalculator() {
         <Truck className="w-5 h-5 text-primary" />
         <span className="font-semibold text-sm">Calcular frete</span>
       </div>
-      <form onSubmit={e => { e.preventDefault(); calculateShipping(cep); }} className="flex gap-2">
+      <form onSubmit={handleCalc} className="flex gap-2">
         <Input placeholder="00000-000" value={cep} onChange={e => setCep(formatCep(e.target.value))} className="h-9" maxLength={9} />
         <Button type="submit" variant="outline" size="sm" className="h-9" disabled={locLoading}>
           {locLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Calcular'}
         </Button>
       </form>
       {error && <p className="text-xs text-destructive">{error}</p>}
-      {shipping && (
+      {shippingResult && location && (
         <div className="flex items-center gap-2 text-sm">
-          {shipping.isFreeShipping ? (
-            <span className="font-semibold text-green-500">✓ Frete Grátis para {location?.city || location?.state}</span>
+          {shippingResult.isFreeShipping ? (
+            <span className="font-semibold text-green-500">✓ Frete Grátis para {location.city || location.state}</span>
           ) : (
-            <span>Frete para {location?.city}: <span className="font-semibold text-primary">R$ {shipping.shippingCost.toFixed(2)}</span></span>
+            <span>Frete para {location.city}: <span className="font-semibold text-primary">R$ {shippingResult.shippingCost.toFixed(2)}</span></span>
           )}
         </div>
       )}
-      {/* Trust badges */}
       <div className="grid grid-cols-3 gap-3 pt-2">
         <div className="flex flex-col items-center text-center gap-1.5 p-3 rounded-lg bg-muted/50">
           <Shield className="w-5 h-5 text-primary" />
@@ -232,7 +251,7 @@ export default function ProductDetailPage() {
             </div>
 
             {/* Shipping Calculator */}
-            <ShippingCalculator />
+            <ShippingCalculator productId={product.id} />
 
             {/* Quantity & Actions */}
             <div className="space-y-4 pt-2">

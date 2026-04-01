@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Trash2, Minus, Plus, ShoppingBag, ArrowRight } from 'lucide-react';
 import MainLayout from '@/components/layout/MainLayout';
@@ -9,8 +10,26 @@ import { toast } from 'sonner';
 
 export default function CartPage() {
   const { items, total, updateQuantity, removeItem, clearCart } = useCart();
-  const { shipping } = useLocation();
-  const shippingCost = shipping?.isFreeShipping === false ? shipping.shippingCost : 0;
+  const { location } = useLocation();
+  const [shippingCost, setShippingCost] = useState(0);
+
+  useEffect(() => {
+    if (!location || items.length === 0) {
+      setShippingCost(0);
+      return;
+    }
+    fetch('/api/shipping/calculate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        region: location.region,
+        items: items.map(i => ({ productId: i.product.id })),
+      }),
+    })
+      .then(r => r.json())
+      .then(data => setShippingCost(data.shippingCost ?? 0))
+      .catch(() => setShippingCost(0));
+  }, [location, items]);
 
   const handleCheckout = async () => {
     try {
@@ -143,11 +162,11 @@ export default function CartPage() {
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Frete</span>
-                  {shipping ? (
-                    shipping.isFreeShipping ? (
+                  {location ? (
+                    shippingCost === 0 ? (
                       <span className="text-green-600 font-medium">Grátis</span>
                     ) : (
-                      <span className="font-medium">{formatCurrency(shipping.shippingCost)}</span>
+                      <span className="font-medium">{formatCurrency(shippingCost)}</span>
                     )
                   ) : (
                     <span className="text-muted-foreground text-xs">Informe o CEP</span>

@@ -15,6 +15,13 @@ export interface Product {
   sellerId?: string;
   isFeatured?: boolean;
   isPromotion?: boolean;
+  shipping?: {
+    sul: number;
+    sudeste: number;
+    centroOeste: number;
+    norte: number;
+    nordeste: number;
+  };
 }
 
 export interface Category {

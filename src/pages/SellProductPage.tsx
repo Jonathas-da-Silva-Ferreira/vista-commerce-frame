@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Package, DollarSign, Layers, Image, Store, Hash, FileText, ArrowLeft, LogIn } from 'lucide-react';
+import { Package, DollarSign, Layers, Image, Store, Hash, FileText, ArrowLeft, LogIn, Truck } from 'lucide-react';
 import MainLayout from '@/components/layout/MainLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -27,6 +27,11 @@ export default function SellProductPage() {
     stock: '',
     image: '',
     sellerName: '',
+    shippingSul: '0',
+    shippingSudeste: '0',
+    shippingCentroOeste: '0',
+    shippingNorte: '25',
+    shippingNordeste: '20',
   });
 
   const selectedCategory = categoryOptions.find(c => c.slug === form.category);
@@ -90,6 +95,13 @@ export default function SellProductPage() {
           image: form.image.trim(),
           seller: form.sellerName.trim() || user?.name || 'Vendedor',
           sellerId: user?.id,
+          shipping: {
+            sul: parseFloat(form.shippingSul) || 0,
+            sudeste: parseFloat(form.shippingSudeste) || 0,
+            centroOeste: parseFloat(form.shippingCentroOeste) || 0,
+            norte: parseFloat(form.shippingNorte) || 0,
+            nordeste: parseFloat(form.shippingNordeste) || 0,
+          },
         }),
       });
       if (!res.ok) throw new Error('Falha ao cadastrar produto');
@@ -208,6 +220,38 @@ export default function SellProductPage() {
                 <div className="relative">
                   <Store className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                   <Input id="sellerName" placeholder={user?.name || 'Sua loja'} className="pl-10" value={form.sellerName} onChange={e => updateField('sellerName', e.target.value)} maxLength={60} />
+                </div>
+              </div>
+
+              {/* Frete por região */}
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <Truck className="w-4 h-4 text-primary" />
+                  <Label className="text-base font-semibold">Frete por região (R$)</Label>
+                </div>
+                <p className="text-xs text-muted-foreground">Defina o valor do frete para cada região. Use 0 para frete grátis.</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                  {[
+                    { key: 'shippingSul', label: 'Sul (RS, SC, PR)' },
+                    { key: 'shippingSudeste', label: 'Sudeste (SP, RJ, MG, ES)' },
+                    { key: 'shippingCentroOeste', label: 'Centro-Oeste (GO, MT, MS, DF)' },
+                    { key: 'shippingNorte', label: 'Norte (AC, AP, AM, PA...)' },
+                    { key: 'shippingNordeste', label: 'Nordeste (BA, CE, PE...)' },
+                  ].map(({ key, label }) => (
+                    <div key={key} className="space-y-1">
+                      <Label htmlFor={key} className="text-xs">{label}</Label>
+                      <Input
+                        id={key}
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        placeholder="0,00"
+                        className="h-9"
+                        value={form[key as keyof typeof form]}
+                        onChange={e => updateField(key, e.target.value)}
+                      />
+                    </div>
+                  ))}
                 </div>
               </div>
 
