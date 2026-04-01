@@ -7,6 +7,8 @@ import { Button } from '@/components/ui/button';
 import { useCart } from '@/contexts/CartContext';
 import { useFavorites } from '@/contexts/FavoritesContext';
 import { useProduct, useCategories, useRelatedProducts } from '@/hooks/useApi';
+import { useLocation } from '@/contexts/LocationContext';
+import { Input } from '@/components/ui/input';
 import { formatCurrency } from '@/lib/utils';
 
 function ImageGallery({ images, name }: { images: string[]; name: string }) {
