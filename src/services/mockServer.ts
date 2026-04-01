@@ -157,6 +157,7 @@ const routes: Array<{ pattern: RegExp; handler: RouteHandler }> = [
       if (init?.method !== 'POST') return json({ error: 'Method not allowed' }, 405);
       await delay(300);
       const body = JSON.parse((init?.body as string) || '{}');
+      const defaultShipping = { sul: 0, sudeste: 0, centroOeste: 0, norte: 25, nordeste: 20 };
       const newProduct: Product = {
         id: crypto.randomUUID(),
         name: body.name,
@@ -170,6 +171,7 @@ const routes: Array<{ pattern: RegExp; handler: RouteHandler }> = [
         seller: body.seller || 'Vendedor',
         stock: Number(body.stock),
         sellerId: body.sellerId,
+        shipping: body.shipping || defaultShipping,
       };
       products.unshift(newProduct);
       return json(newProduct, 201);
