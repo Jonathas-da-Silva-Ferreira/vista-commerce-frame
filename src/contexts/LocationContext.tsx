@@ -23,18 +23,25 @@ interface LocationContextType {
 
 const LocationContext = createContext<LocationContextType | null>(null);
 
+// Chave fixa para localStorage — centralizada como constante
+// para facilitar busca e evitar typos em múltiplos pontos
 const STORAGE_KEY = 'marketbr_location';
 
 export function LocationProvider({ children }: { children: ReactNode }) {
+  // Inicializa estado com valor do localStorage via lazy initializer —
+  // evita leitura síncrona do storage a cada re-render
   const [location, setLocation] = useState<LocationData | null>(() => {
     const saved = localStorage.getItem(STORAGE_KEY);
     return saved ? JSON.parse(saved) : null;
   });
+  // shipping separado de location porque pode ser recalculado independentemente
+  // (ex: mesmo CEP, mas produto diferente com frete diferente)
   const [shipping, setShipping] = useState<ShippingResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Recalculate shipping when location loads from storage
+  // Recalcula frete genérico ao restaurar localização do storage —
+  // necessário porque o shipping não é persistido (depende de dados do backend)
   useEffect(() => {
     if (location && !shipping) {
       fetch('/api/shipping/calculate', {
@@ -48,7 +55,10 @@ export function LocationProvider({ children }: { children: ReactNode }) {
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // useCallback para estabilizar referência — evita re-renders desnecessários
+  // em componentes que recebem calculateShipping como prop
   const calculateShipping = useCallback(async (cep: string) => {
+    // Remove tudo que não é número para aceitar CEP com ou sem máscara
     const cleanCep = cep.replace(/\D/g, '');
     if (cleanCep.length !== 8) {
       setError('CEP inválido. Informe 8 dígitos.');
@@ -59,12 +69,13 @@ export function LocationProvider({ children }: { children: ReactNode }) {
     setError(null);
 
     try {
-      // Get location from CEP
+      // Pipeline de 2 etapas: primeiro resolve CEP → localização,
+      // depois localização → custo de frete. Separado para permitir
+      // futura troca do provider de CEP sem afetar cálculo de frete
       const locRes = await fetch(`/api/location?cep=${cleanCep}`);
       if (!locRes.ok) throw new Error('CEP não encontrado');
       const locData: LocationData = await locRes.json();
 
-      // Calculate shipping
       const shipRes = await fetch('/api/shipping/calculate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -74,6 +85,8 @@ export function LocationProvider({ children }: { children: ReactNode }) {
 
       setLocation(locData);
       setShipping(shipData);
+      // Persiste apenas localização — frete é recalculado dinamicamente
+      // pois pode variar por produto
       localStorage.setItem(STORAGE_KEY, JSON.stringify(locData));
     } catch {
       setError('Não foi possível calcular o frete. Verifique o CEP.');

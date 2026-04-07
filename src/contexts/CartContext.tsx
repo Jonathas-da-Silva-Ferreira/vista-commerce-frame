@@ -14,11 +14,16 @@ type CartAction =
   | { type: 'CLEAR_CART' }
   | { type: 'LOAD_CART'; items: CartItem[] };
 
+// Função pura para cálculo de totais — extraída do reducer para ser reutilizada
+// em múltiplas actions sem duplicação de lógica
 const calculateTotals = (items: CartItem[]) => ({
   total: items.reduce((sum, item) => sum + item.product.price * item.quantity, 0),
   itemCount: items.reduce((sum, item) => sum + item.quantity, 0),
 });
 
+// useReducer ao invés de useState porque o carrinho tem múltiplas ações
+// que modificam o estado de formas distintas — reducer centraliza a lógica
+// e facilita testes unitários de cada action isoladamente
 function cartReducer(state: CartState, action: CartAction): CartState {
   switch (action.type) {
     case 'ADD_ITEM': {
@@ -28,6 +33,8 @@ function cartReducer(state: CartState, action: CartAction): CartState {
 
       let newItems: CartItem[];
       if (existingIndex >= 0) {
+        // Produto já existe no carrinho — incrementa quantidade ao invés de duplicar,
+        // seguindo padrão UX de e-commerce (Amazon, ML)
         newItems = state.items.map((item, index) =>
           index === existingIndex
             ? { ...item, quantity: item.quantity + (action.quantity || 1) }
@@ -37,6 +44,8 @@ function cartReducer(state: CartState, action: CartAction): CartState {
         newItems = [...state.items, { product: action.product, quantity: action.quantity || 1 }];
       }
 
+      // Recalcula totais a cada mutação para manter consistência —
+      // evita bugs onde total e itemCount ficam dessincronizados dos items
       return { items: newItems, ...calculateTotals(newItems) };
     }
 
@@ -46,6 +55,8 @@ function cartReducer(state: CartState, action: CartAction): CartState {
     }
 
     case 'UPDATE_QUANTITY': {
+      // Quantidade ≤ 0 remove o item automaticamente —
+      // evita estado inválido de item com quantidade zero no carrinho
       if (action.quantity <= 0) {
         const newItems = state.items.filter(item => item.product.id !== action.productId);
         return { items: newItems, ...calculateTotals(newItems) };
@@ -87,6 +98,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
     itemCount: 0,
   });
 
+  // Reidrata carrinho do localStorage na montagem —
+  // garante persistência entre sessões sem necessidade de backend
   useEffect(() => {
     const stored = localStorage.getItem('cart');
     if (stored) {
@@ -94,11 +107,13 @@ export function CartProvider({ children }: { children: ReactNode }) {
         const items = JSON.parse(stored) as CartItem[];
         dispatch({ type: 'LOAD_CART', items });
       } catch {
-        // Invalid stored data
+        // JSON corrompido — ignora para não quebrar a experiência do usuário
       }
     }
   }, []);
 
+  // Persiste a cada mudança nos items — useEffect garante que
+  // o localStorage reflita sempre o estado mais recente
   useEffect(() => {
     localStorage.setItem('cart', JSON.stringify(state.items));
   }, [state.items]);
@@ -119,6 +134,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
     dispatch({ type: 'CLEAR_CART' });
   };
 
+  // Verificação O(n) aceitável — carrinhos raramente ultrapassam 20 items,
+  // e evita manter um Set/Map separado que poderia dessincronizar
   const isInCart = (productId: string) => {
     return state.items.some(item => item.product.id === productId);
   };
