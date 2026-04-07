@@ -11,13 +11,19 @@ import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { categories } from '@/data/mockData';
 
+// Filtra categorias que possuem subcategorias —
+// categorias especiais (Promoção, Melhores Produtos) não devem aparecer no formulário
 const categoryOptions = categories.filter(c => (c.subcategories?.length ?? 0) > 0);
 
 export default function SellProductPage() {
   const { user, isAuthenticated } = useAuth();
   const navigate = useNavigate();
+  // Estado separado para controlar loading do submit —
+  // previne duplo-clique e múltiplos cadastros acidentais
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Estado único para todo o formulário ao invés de múltiplos useState —
+  // simplifica reset do form e serialização para envio à API
   const [form, setForm] = useState({
     name: '',
     description: '',
@@ -27,6 +33,8 @@ export default function SellProductPage() {
     stock: '',
     image: '',
     sellerName: '',
+    // Valores padrão refletem política comercial: frete grátis nas regiões
+    // mais populosas (Sul/Sudeste/CO) e cobrado nas demais
     shippingSul: '0',
     shippingSudeste: '0',
     shippingCentroOeste: '0',
@@ -34,9 +42,13 @@ export default function SellProductPage() {
     shippingNordeste: '20',
   });
 
+  // Deriva subcategorias da categoria selecionada —
+  // garante que o select de subcategoria sempre reflita opções válidas
   const selectedCategory = categoryOptions.find(c => c.slug === form.category);
   const subcategoryOptions = selectedCategory?.subcategories ?? [];
 
+  // Atualização genérica por campo — ao trocar categoria, reseta subcategoria
+  // para evitar estado inválido (subcategoria de outra categoria)
   const updateField = (field: string, value: string) => {
     setForm(prev => ({
       ...prev,
@@ -45,6 +57,8 @@ export default function SellProductPage() {
     }));
   };
 
+  // Guard clause de autenticação renderizado antes do formulário —
+  // abordagem mais segura que redirect, pois mostra contexto ao usuário
   if (!isAuthenticated) {
     return (
       <MainLayout>
@@ -70,11 +84,15 @@ export default function SellProductPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    // Validação client-side antes da chamada à API —
+    // reduz requests desnecessários e dá feedback imediato ao vendedor
     if (!form.name || !form.description || !form.category || !form.subcategory || !form.price || !form.stock || !form.image) {
       toast.error('Preencha todos os campos obrigatórios.');
       return;
     }
 
+    // Converte strings para números e valida —
+    // inputs type="number" retornam string no React, conversão explícita é necessária
     const price = parseFloat(form.price);
     const stock = parseInt(form.stock, 10);
     if (isNaN(price) || price <= 0) { toast.error('Preço inválido.'); return; }
@@ -93,8 +111,12 @@ export default function SellProductPage() {
           price,
           stock,
           image: form.image.trim(),
+          // Fallback encadeado: nome da loja > nome do usuário > genérico
+          // Garante que todo produto tenha um vendedor visível
           seller: form.sellerName.trim() || user?.name || 'Vendedor',
           sellerId: user?.id,
+          // Estrutura de frete por região — permite cálculo dinâmico
+          // baseado na localização do comprador
           shipping: {
             sul: parseFloat(form.shippingSul) || 0,
             sudeste: parseFloat(form.shippingSudeste) || 0,
@@ -106,6 +128,8 @@ export default function SellProductPage() {
       });
       if (!res.ok) throw new Error('Falha ao cadastrar produto');
       toast.success('Produto cadastrado com sucesso!');
+      // Redireciona para listagem após cadastro — confirma visualmente
+      // que o produto foi adicionado ao catálogo
       navigate('/produtos');
     } catch {
       toast.error('Erro ao cadastrar produto. Tente novamente.');
@@ -136,6 +160,7 @@ export default function SellProductPage() {
                 <Label htmlFor="name">Nome do produto *</Label>
                 <div className="relative">
                   <Package className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  {/* maxLength=120 para limitar tamanho em cards e listagens */}
                   <Input id="name" placeholder="Ex: Smartphone Ultra 5G" className="pl-10" value={form.name} onChange={e => updateField('name', e.target.value)} required maxLength={120} />
                 </div>
               </div>
@@ -149,7 +174,7 @@ export default function SellProductPage() {
                 </div>
               </div>
 
-              {/* Categoria e Subcategoria */}
+              {/* Categoria e Subcategoria — grid responsivo para aproveitar espaço horizontal */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Categoria *</Label>
@@ -168,6 +193,7 @@ export default function SellProductPage() {
 
                 <div className="space-y-2">
                   <Label>Subcategoria *</Label>
+                  {/* Desabilitado até selecionar categoria — previne seleção de subcategoria órfã */}
                   <Select value={form.subcategory} onValueChange={v => updateField('subcategory', v)} disabled={!form.category}>
                     <SelectTrigger>
                       <SelectValue placeholder={form.category ? 'Selecione' : 'Escolha a categoria primeiro'} />
@@ -187,6 +213,7 @@ export default function SellProductPage() {
                   <Label htmlFor="price">Preço (R$) *</Label>
                   <div className="relative">
                     <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    {/* step=0.01 para permitir centavos; min=0.01 impede preço zero */}
                     <Input id="price" type="number" step="0.01" min="0.01" placeholder="0,00" className="pl-10" value={form.price} onChange={e => updateField('price', e.target.value)} required />
                   </div>
                 </div>
@@ -200,13 +227,14 @@ export default function SellProductPage() {
                 </div>
               </div>
 
-              {/* Imagem */}
+              {/* Imagem — URL externa por enquanto; em produção, usar upload com storage */}
               <div className="space-y-2">
                 <Label htmlFor="image">URL da imagem *</Label>
                 <div className="relative">
                   <Image className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                   <Input id="image" type="url" placeholder="https://exemplo.com/imagem.jpg" className="pl-10" value={form.image} onChange={e => updateField('image', e.target.value)} required />
                 </div>
+                {/* Preview em tempo real — feedback visual imediato para o vendedor */}
                 {form.image && (
                   <div className="mt-2 rounded-lg overflow-hidden border border-border w-32 h-32">
                     <img src={form.image} alt="Preview" className="w-full h-full object-cover" onError={e => (e.currentTarget.style.display = 'none')} />
@@ -214,7 +242,7 @@ export default function SellProductPage() {
                 )}
               </div>
 
-              {/* Nome da loja */}
+              {/* Nome da loja — opcional, usa nome do usuário como fallback */}
               <div className="space-y-2">
                 <Label htmlFor="sellerName">Nome da loja / vendedor</Label>
                 <div className="relative">
@@ -223,7 +251,8 @@ export default function SellProductPage() {
                 </div>
               </div>
 
-              {/* Frete por região */}
+              {/* Frete por região — vendedor define custo por região do Brasil,
+                  permitindo estratégias como frete grátis em regiões próximas */}
               <div className="space-y-3">
                 <div className="flex items-center gap-2">
                   <Truck className="w-4 h-4 text-primary" />
@@ -231,6 +260,8 @@ export default function SellProductPage() {
                 </div>
                 <p className="text-xs text-muted-foreground">Defina o valor do frete para cada região. Use 0 para frete grátis.</p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                  {/* Array de configuração ao invés de 5 inputs duplicados —
+                      facilita adicionar/remover regiões sem tocar no JSX */}
                   {[
                     { key: 'shippingSul', label: 'Sul (RS, SC, PR)' },
                     { key: 'shippingSudeste', label: 'Sudeste (SP, RJ, MG, ES)' },

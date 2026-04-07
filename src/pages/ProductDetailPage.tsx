@@ -11,12 +11,15 @@ import { useLocation } from '@/contexts/LocationContext';
 import { Input } from '@/components/ui/input';
 import { formatCurrency } from '@/lib/utils';
 
+// Componente isolado de galeria — estado de imagem selecionada é local
+// pois não precisa ser compartilhado com outros componentes
 function ImageGallery({ images, name }: { images: string[]; name: string }) {
   const [selectedIndex, setSelectedIndex] = useState(0);
 
   return (
     <div className="flex flex-col-reverse md:flex-row gap-3">
-      {/* Thumbnails */}
+      {/* Thumbnails na lateral (desktop) ou embaixo (mobile) —
+          flex-col-reverse inverte a ordem visual sem alterar DOM */}
       <div className="flex md:flex-col gap-2 overflow-x-auto md:overflow-y-auto md:max-h-[500px] pb-1 md:pb-0">
         {images.map((img, i) => (
           <button
@@ -33,7 +36,7 @@ function ImageGallery({ images, name }: { images: string[]; name: string }) {
         ))}
       </div>
 
-      {/* Main Image */}
+      {/* Imagem principal — key={selectedIndex} força re-mount para animação de fade */}
       <div className="relative flex-1 aspect-square overflow-hidden rounded-xl bg-muted">
         <img
           src={images[selectedIndex]}
@@ -46,17 +49,22 @@ function ImageGallery({ images, name }: { images: string[]; name: string }) {
   );
 }
 
+// Calculadora de frete específica por produto — isolada porque
+// faz fetch próprio e tem estado independente da calculadora do carrinho
 function ShippingCalculator({ productId }: { productId: string }) {
   const { location, loading: locLoading, error, calculateShipping } = useLocation();
   const [cep, setCep] = useState('');
   const [shippingResult, setShippingResult] = useState<{ shippingCost: number; isFreeShipping: boolean } | null>(null);
 
+  // Máscara de CEP aplicada em tempo real — melhora usabilidade
+  // e garante formato consistente antes do envio
   const formatCep = (v: string) => {
     const d = v.replace(/\D/g, '').slice(0, 8);
     return d.length > 5 ? `${d.slice(0, 5)}-${d.slice(5)}` : d;
   };
 
-  // Calculate product-specific shipping when location changes
+  // Recalcula frete quando localização ou produto muda —
+  // envia productId para o backend buscar o frete definido pelo vendedor
   useEffect(() => {
     if (location) {
       fetch('/api/shipping/calculate', {
@@ -72,6 +80,8 @@ function ShippingCalculator({ productId }: { productId: string }) {
 
   const handleCalc = async (e: React.FormEvent) => {
     e.preventDefault();
+    // Delega ao contexto que persiste localização globalmente —
+    // o CEP digitado aqui fica disponível no carrinho e header
     await calculateShipping(cep);
   };
 
@@ -88,6 +98,7 @@ function ShippingCalculator({ productId }: { productId: string }) {
         </Button>
       </form>
       {error && <p className="text-xs text-destructive">{error}</p>}
+      {/* Resultado do frete — exibe cidade quando disponível para confirmação visual */}
       {shippingResult && location && (
         <div className="flex items-center gap-2 text-sm">
           {shippingResult.isFreeShipping ? (
@@ -97,6 +108,7 @@ function ShippingCalculator({ productId }: { productId: string }) {
           )}
         </div>
       )}
+      {/* Selos de confiança — elementos de prova social que aumentam conversão */}
       <div className="grid grid-cols-3 gap-3 pt-2">
         <div className="flex flex-col items-center text-center gap-1.5 p-3 rounded-lg bg-muted/50">
           <Shield className="w-5 h-5 text-primary" />
@@ -121,12 +133,17 @@ export default function ProductDetailPage() {
   const { addItem, isInCart } = useCart();
   const { toggleFavorite, isFavorite } = useFavorites();
 
+  // Hooks customizados encapsulam fetch + cache via React Query —
+  // componente não precisa gerenciar loading/error manualmente
   const { product, loading } = useProduct(id);
   const { categories } = useCategories();
   const { products: relatedProducts } = useRelatedProducts(product?.id, product?.category);
 
+  // Busca categoria para breadcrumb — derivado e não armazenado em estado
   const category = categories.find(c => c.slug === product?.category);
 
+  // Skeleton loading — mantém layout estável enquanto carrega,
+  // evitando CLS (Cumulative Layout Shift) que prejudica UX e SEO
   if (loading) {
     return (
       <MainLayout>
@@ -167,10 +184,13 @@ export default function ProductDetailPage() {
     );
   }
 
+  // Desconto calculado como derivação — não armazenado em estado
+  // pois é valor puro derivado de price/originalPrice
   const discount = product.originalPrice
     ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
     : null;
 
+  // Fallback para produtos sem galeria — garante que sempre haja ao menos 1 imagem
   const allImages = product.images?.length ? product.images : [product.image];
 
   const handleAddToCart = () => {
@@ -180,7 +200,7 @@ export default function ProductDetailPage() {
   return (
     <MainLayout>
       <div className="container mx-auto px-4 py-6">
-        {/* Breadcrumb */}
+        {/* Breadcrumb — navegação hierárquica para SEO e usabilidade */}
         <nav className="flex items-center gap-2 text-sm text-muted-foreground mb-6 flex-wrap">
           <Link to="/" className="hover:text-foreground transition-colors">Início</Link>
           <ChevronRight className="w-4 h-4" />
@@ -195,11 +215,12 @@ export default function ProductDetailPage() {
           <span className="text-foreground font-medium line-clamp-1">{product.name}</span>
         </nav>
 
-        {/* Product Details */}
+        {/* Layout 2 colunas: imagem à esquerda, info à direita — padrão e-commerce */}
         <div className="grid md:grid-cols-2 gap-8 lg:gap-12 mb-16">
-          {/* Image Gallery */}
           <div className="relative">
             <ImageGallery images={allImages} name={product.name} />
+            {/* Badge de desconto posicionado absolute sobre a imagem —
+                z-10 garante visibilidade sobre thumbnails */}
             {discount && (
               <span className="absolute top-4 right-4 md:left-auto bg-destructive text-destructive-foreground px-3 py-1.5 rounded-lg text-sm font-bold z-10">
                 -{discount}%
@@ -207,14 +228,14 @@ export default function ProductDetailPage() {
             )}
           </div>
 
-          {/* Product Info */}
           <div className="space-y-5">
             <div>
               <p className="text-sm text-muted-foreground mb-1">Vendido por <span className="text-primary font-medium">{product.seller}</span></p>
               <h1 className="text-2xl md:text-3xl font-bold leading-tight">{product.name}</h1>
             </div>
 
-            {/* Rating */}
+            {/* Rating com estrelas preenchidas baseado no floor —
+                arredonda para baixo para não inflacionar avaliação */}
             <div className="flex items-center gap-2">
               <div className="flex items-center gap-0.5">
                 {Array.from({ length: 5 }).map((_, i) => (
@@ -225,7 +246,7 @@ export default function ProductDetailPage() {
               <span className="text-muted-foreground text-sm">({product.reviewCount} avaliações)</span>
             </div>
 
-            {/* Price */}
+            {/* Bloco de preço com destaque visual — elemento mais importante da página */}
             <div className="bg-card border border-border rounded-xl p-5 space-y-1">
               {product.originalPrice && (
                 <div className="flex items-center gap-2">
@@ -238,22 +259,22 @@ export default function ProductDetailPage() {
                 </div>
               )}
               <p className="text-3xl md:text-4xl font-bold text-primary">{formatCurrency(product.price)}</p>
+              {/* Parcelamento calculado inline — divisão simples sem juros */}
               <p className="text-sm text-muted-foreground">
                 Em até <span className="font-semibold text-foreground">12x</span> de{' '}
                 <span className="font-semibold text-foreground">{formatCurrency(product.price / 12)}</span> sem juros
               </p>
             </div>
 
-            {/* Description */}
             <div>
               <h2 className="font-semibold mb-2">Descrição</h2>
               <p className="text-muted-foreground leading-relaxed">{product.description}</p>
             </div>
 
-            {/* Shipping Calculator */}
+            {/* Frete calculado por produto — usa dados do vendedor, não valor genérico */}
             <ShippingCalculator productId={product.id} />
 
-            {/* Quantity & Actions */}
+            {/* Controle de quantidade com limites: mín=1, máx=estoque */}
             <div className="space-y-4 pt-2">
               <div className="flex items-center gap-4">
                 <span className="font-medium">Quantidade:</span>
@@ -273,6 +294,8 @@ export default function ProductDetailPage() {
               </div>
 
               <div className="flex gap-3">
+                {/* Texto do botão muda se produto já está no carrinho —
+                    feedback contextual para o usuário */}
                 <Button className="flex-1 h-12 text-base font-semibold" size="lg" onClick={handleAddToCart}>
                   <ShoppingCart className="w-5 h-5 mr-2" />
                   {isInCart(product.id) ? 'Atualizar Carrinho' : 'Comprar'}
@@ -290,7 +313,7 @@ export default function ProductDetailPage() {
           </div>
         </div>
 
-        {/* Related Products */}
+        {/* Produtos relacionados — exibido apenas se houver itens na mesma categoria */}
         {relatedProducts.length > 0 && (
           <section className="border-t border-border pt-10">
             <div className="flex items-center justify-between mb-6">

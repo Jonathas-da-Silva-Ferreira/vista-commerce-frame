@@ -11,8 +11,13 @@ import { toast } from 'sonner';
 export default function CartPage() {
   const { items, total, updateQuantity, removeItem, clearCart } = useCart();
   const { location } = useLocation();
+  // Frete como estado local ao invés de derivar do contexto —
+  // o cálculo depende da combinação específica de items + região,
+  // e cada página pode ter necessidades diferentes de frete
   const [shippingCost, setShippingCost] = useState(0);
 
+  // Recalcula frete sempre que localização ou items mudam —
+  // envia lista de productIds para o backend calcular frete individual por produto
   useEffect(() => {
     if (!location || items.length === 0) {
       setShippingCost(0);
@@ -23,17 +28,22 @@ export default function CartPage() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         region: location.region,
+        // Envia apenas IDs — o backend já tem os dados de frete de cada produto,
+        // evitando enviar dados sensíveis (preço do frete) do client
         items: items.map(i => ({ productId: i.product.id })),
       }),
     })
       .then(r => r.json())
       .then(data => setShippingCost(data.shippingCost ?? 0))
+      // Falha silenciosa no frete — melhor mostrar subtotal sem frete
+      // do que quebrar toda a página do carrinho
       .catch(() => setShippingCost(0));
   }, [location, items]);
 
   const handleCheckout = async () => {
     try {
-      // Decrement stock for each item
+      // Decrementa estoque de todos os itens em paralelo via Promise.all —
+      // mais rápido que sequencial e aceitável porque cada PATCH afeta um produto diferente
       await Promise.all(
         items.map(item =>
           fetch(`/api/products/${item.product.id}/stock`, {
@@ -50,6 +60,8 @@ export default function CartPage() {
     }
   };
 
+  // Early return para carrinho vazio — renderiza CTA antes de montar layout completo,
+  // evitando flash de conteúdo vazio
   if (items.length === 0) {
     return (
       <MainLayout>
@@ -80,6 +92,7 @@ export default function CartPage() {
           </Button>
         </div>
 
+        {/* Grid 2/3 + 1/3: items ocupam mais espaço, resumo fica fixo na lateral */}
         <div className="grid lg:grid-cols-3 gap-8">
           {/* Cart Items */}
           <div className="lg:col-span-2 space-y-4">
@@ -109,6 +122,8 @@ export default function CartPage() {
 
                   <div className="flex items-center justify-between mt-3">
                     <div className="flex items-center gap-2">
+                      {/* updateQuantity com quantity-1 remove automaticamente se chegar a 0 —
+                          lógica centralizada no reducer */}
                       <Button
                         variant="outline"
                         size="icon"
@@ -118,6 +133,7 @@ export default function CartPage() {
                         <Minus className="w-3 h-3" />
                       </Button>
                       <span className="w-8 text-center font-medium">{quantity}</span>
+                      {/* Limite máximo = estoque disponível — previne overselling */}
                       <Button
                         variant="outline"
                         size="icon"
@@ -130,6 +146,8 @@ export default function CartPage() {
                     </div>
 
                     <div className="flex items-center gap-4">
+                      {/* Preço total do item (unitário × quantidade) —
+                          calculado inline pois é apenas visual, o total real vem do reducer */}
                       <span className="font-bold text-primary">
                         {formatCurrency(product.price * quantity)}
                       </span>
@@ -148,7 +166,7 @@ export default function CartPage() {
             ))}
           </div>
 
-          {/* Summary */}
+          {/* Summary — sticky para ficar visível durante scroll em carrinhos grandes */}
           <div className="lg:col-span-1">
             <div className="bg-card rounded-xl p-6 shadow-card sticky top-24">
               <h2 className="text-lg font-bold mb-4">Resumo do Pedido</h2>
@@ -162,6 +180,7 @@ export default function CartPage() {
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Frete</span>
+                  {/* Três estados possíveis: grátis, pago, ou sem CEP informado */}
                   {location ? (
                     shippingCost === 0 ? (
                       <span className="text-green-600 font-medium">Grátis</span>
@@ -174,6 +193,7 @@ export default function CartPage() {
                 </div>
                 <div className="border-t pt-3 flex justify-between">
                   <span className="font-bold">Total</span>
+                  {/* Soma subtotal + frete — se CEP não informado, shippingCost=0 */}
                   <span className="font-bold text-xl text-primary">{formatCurrency(total + shippingCost)}</span>
                 </div>
               </div>
