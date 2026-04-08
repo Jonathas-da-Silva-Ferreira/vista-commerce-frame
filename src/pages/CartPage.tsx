@@ -15,6 +15,8 @@ export default function CartPage() {
   // o cálculo depende da combinação específica de items + região,
   // e cada página pode ter necessidades diferentes de frete
   const [shippingCost, setShippingCost] = useState(0);
+  const [deliveryDays, setDeliveryDays] = useState<number | null>(null);
+  const [nearestCenterName, setNearestCenterName] = useState<string | null>(null);
 
   // Recalcula frete sempre que localização ou items mudam —
   // envia lista de productIds para o backend calcular frete individual por produto

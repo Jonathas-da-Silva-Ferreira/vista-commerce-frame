@@ -49,28 +49,35 @@ function ImageGallery({ images, name }: { images: string[]; name: string }) {
   );
 }
 
-// Calculadora de frete específica por produto — isolada porque
-// faz fetch próprio e tem estado independente da calculadora do carrinho
+// Calculadora de frete avançada — exibe custo, prazo e centro de envio
 function ShippingCalculator({ productId }: { productId: string }) {
   const { location, loading: locLoading, error, calculateShipping } = useLocation();
   const [cep, setCep] = useState('');
-  const [shippingResult, setShippingResult] = useState<{ shippingCost: number; isFreeShipping: boolean } | null>(null);
+  const [shippingResult, setShippingResult] = useState<{
+    shippingCost: number;
+    isFreeShipping: boolean;
+    deliveryDays: number;
+    nearestCenter: { name: string; city: string; state: string };
+    distanceKm: number;
+  } | null>(null);
 
-  // Máscara de CEP aplicada em tempo real — melhora usabilidade
-  // e garante formato consistente antes do envio
   const formatCep = (v: string) => {
     const d = v.replace(/\D/g, '').slice(0, 8);
     return d.length > 5 ? `${d.slice(0, 5)}-${d.slice(5)}` : d;
   };
 
-  // Recalcula frete quando localização ou produto muda —
-  // envia productId para o backend buscar o frete definido pelo vendedor
+  // Recalcula frete quando localização muda — envia coordenadas
+  // para cálculo por distância via Haversine no backend
   useEffect(() => {
     if (location) {
       fetch('/api/shipping/calculate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ region: location.region, productId }),
+        body: JSON.stringify({
+          latitude: location.latitude,
+          longitude: location.longitude,
+          productId,
+        }),
       })
         .then(r => r.json())
         .then(setShippingResult)
@@ -80,8 +87,6 @@ function ShippingCalculator({ productId }: { productId: string }) {
 
   const handleCalc = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Delega ao contexto que persiste localização globalmente —
-    // o CEP digitado aqui fica disponível no carrinho e header
     await calculateShipping(cep);
   };
 
@@ -89,7 +94,7 @@ function ShippingCalculator({ productId }: { productId: string }) {
     <div className="space-y-3">
       <div className="flex items-center gap-2">
         <Truck className="w-5 h-5 text-primary" />
-        <span className="font-semibold text-sm">Calcular frete</span>
+        <span className="font-semibold text-sm">Calcular frete e prazo</span>
       </div>
       <form onSubmit={handleCalc} className="flex gap-2">
         <Input placeholder="00000-000" value={cep} onChange={e => setCep(formatCep(e.target.value))} className="h-9" maxLength={9} />
@@ -98,17 +103,25 @@ function ShippingCalculator({ productId }: { productId: string }) {
         </Button>
       </form>
       {error && <p className="text-xs text-destructive">{error}</p>}
-      {/* Resultado do frete — exibe cidade quando disponível para confirmação visual */}
+
+      {/* Resultado avançado: custo, prazo, origem e distância */}
       {shippingResult && location && (
-        <div className="flex items-center gap-2 text-sm">
+        <div className="bg-muted/50 rounded-lg p-3 space-y-2 text-sm">
           {shippingResult.isFreeShipping ? (
-            <span className="font-semibold text-green-500">✓ Frete Grátis para {location.city || location.state}</span>
+            <p className="font-semibold text-green-500">✓ Frete Grátis para {location.city || location.state}</p>
           ) : (
-            <span>Frete para {location.city}: <span className="font-semibold text-primary">R$ {shippingResult.shippingCost.toFixed(2)}</span></span>
+            <p>Frete para {location.city}: <span className="font-semibold text-primary">R$ {shippingResult.shippingCost.toFixed(2)}</span></p>
           )}
+          <p className="flex items-center gap-1.5 text-muted-foreground text-xs">
+            <span>📦 Entrega em até <span className="font-semibold text-foreground">{shippingResult.deliveryDays} dias úteis</span></span>
+          </p>
+          <p className="text-xs text-muted-foreground">
+            Enviado de {shippingResult.nearestCenter.city} - {shippingResult.nearestCenter.state} (~{shippingResult.distanceKm} km)
+          </p>
         </div>
       )}
-      {/* Selos de confiança — elementos de prova social que aumentam conversão */}
+
+      {/* Selos de confiança */}
       <div className="grid grid-cols-3 gap-3 pt-2">
         <div className="flex flex-col items-center text-center gap-1.5 p-3 rounded-lg bg-muted/50">
           <Shield className="w-5 h-5 text-primary" />
