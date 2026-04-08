@@ -55,6 +55,27 @@ export interface SearchFilters {
   sortBy?: 'price-asc' | 'price-desc' | 'rating' | 'newest';
 }
 
+// Centro de distribuição — cada um possui coordenadas geográficas
+// para cálculo de distância via Haversine até o cliente
+export interface DistributionCenter {
+  id: string;
+  name: string;
+  city: string;
+  state: string;
+  latitude: number;
+  longitude: number;
+}
+
+// Resultado completo do cálculo de frete avançado —
+// inclui prazo, centro mais próximo e distância calculada
+export interface ShippingResult {
+  shippingCost: number;
+  isFreeShipping: boolean;
+  deliveryDays: number;
+  nearestCenter: DistributionCenter;
+  distanceKm: number;
+}
+
 export interface ApiResponse<T> {
   data: T;
   success: boolean;
