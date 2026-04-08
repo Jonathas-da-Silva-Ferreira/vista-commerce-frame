@@ -304,50 +304,49 @@ const routes: Array<{ pattern: RegExp; handler: RouteHandler }> = [
       return json({ cep, state: info.state, city: info.city, region });
     },
   },
-  // POST /api/shipping/calculate — cálculo de frete com 3 modos:
-  // 1. Por productId (página de detalhe)
-  // 2. Por lista de items (carrinho)
-  // 3. Genérico por região (fallback)
+  // GET /api/distribution-centers — lista de centros de distribuição
+  {
+    pattern: /^\/api\/distribution-centers$/,
+    handler: async () => {
+      await delay(100);
+      return json(distributionCenters);
+    },
+  },
+  // POST /api/shipping/calculate — cálculo avançado de frete baseado em distância.
+  // Recebe coordenadas do cliente, encontra CD mais próximo via Haversine,
+  // e retorna custo + prazo baseado em faixas de distância.
   {
     pattern: /^\/api\/shipping\/calculate$/,
     handler: async (_url, init) => {
       if (init?.method !== 'POST') return json({ error: 'Method not allowed' }, 405);
       await delay(150);
       const body = JSON.parse((init?.body as string) || '{}');
-      // Mapeia nome da região (pt-BR) para chave do objeto shipping —
-      // necessário porque a API de localização retorna nomes legíveis
-      const regionKey: Record<string, string> = {
-        'Sul': 'sul', 'Sudeste': 'sudeste', 'Centro-Oeste': 'centroOeste',
-        'Norte': 'norte', 'Nordeste': 'nordeste',
-      };
-      const key = regionKey[body.region] || 'sudeste';
 
-      // Modo 1: frete específico de um produto (página de detalhe)
-      if (body.productId) {
-        const product = products.find(p => p.id === body.productId);
-        const shipping = product?.shipping || { sul: 0, sudeste: 0, centroOeste: 0, norte: 25, nordeste: 20 };
-        const cost = (shipping as Record<string, number>)[key] ?? 0;
-        return json({ shippingCost: cost, isFreeShipping: cost === 0 });
+      const { latitude, longitude } = body;
+
+      // Se coordenadas não foram enviadas, usa fallback por região (compatibilidade)
+      if (latitude == null || longitude == null) {
+        const regionKey: Record<string, string> = {
+          'Sul': 'sul', 'Sudeste': 'sudeste', 'Centro-Oeste': 'centroOeste',
+          'Norte': 'norte', 'Nordeste': 'nordeste',
+        };
+        const key = regionKey[body.region] || 'sudeste';
+        const defaultShipping: Record<string, number> = { sul: 0, sudeste: 0, centroOeste: 0, norte: 25, nordeste: 20 };
+        const cost = defaultShipping[key] ?? 0;
+        return json({ shippingCost: cost, isFreeShipping: cost === 0, deliveryDays: 5, nearestCenter: distributionCenters[0], distanceKm: 0 });
       }
 
-      // Modo 2: soma frete de múltiplos produtos (carrinho)
-      // Cada produto pode ter frete diferente — soma individual é mais justo
-      // do que aplicar frete único para todos
-      if (body.items && Array.isArray(body.items)) {
-        let totalCost = 0;
-        for (const item of body.items) {
-          const product = products.find(p => p.id === item.productId);
-          const shipping = product?.shipping || { sul: 0, sudeste: 0, centroOeste: 0, norte: 25, nordeste: 20 };
-          const cost = (shipping as Record<string, number>)[key] ?? 0;
-          totalCost += cost;
-        }
-        return json({ shippingCost: totalCost, isFreeShipping: totalCost === 0 });
-      }
+      // Cálculo principal: encontra CD mais próximo e deriva custo/prazo
+      const { center, distanceKm } = findNearestCenter(latitude, longitude);
+      const { cost, days } = calculateShippingByDistance(distanceKm);
 
-      // Modo 3: fallback genérico — usado quando não há contexto de produto
-      const defaultShipping: Record<string, number> = { sul: 0, sudeste: 0, centroOeste: 0, norte: 25, nordeste: 20 };
-      const cost = defaultShipping[key] ?? 0;
-      return json({ shippingCost: cost, isFreeShipping: cost === 0 });
+      return json({
+        shippingCost: cost,
+        isFreeShipping: cost === 0,
+        deliveryDays: days,
+        nearestCenter: center,
+        distanceKm,
+      });
     },
   },
   // POST /api/contact — formulário de contato
