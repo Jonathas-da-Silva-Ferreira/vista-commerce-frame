@@ -23,23 +23,30 @@ export default function CartPage() {
   useEffect(() => {
     if (!location || items.length === 0) {
       setShippingCost(0);
+      setDeliveryDays(null);
+      setNearestCenterName(null);
       return;
     }
     fetch('/api/shipping/calculate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        region: location.region,
-        // Envia apenas IDs — o backend já tem os dados de frete de cada produto,
-        // evitando enviar dados sensíveis (preço do frete) do client
+        latitude: location.latitude,
+        longitude: location.longitude,
         items: items.map(i => ({ productId: i.product.id })),
       }),
     })
       .then(r => r.json())
-      .then(data => setShippingCost(data.shippingCost ?? 0))
-      // Falha silenciosa no frete — melhor mostrar subtotal sem frete
-      // do que quebrar toda a página do carrinho
-      .catch(() => setShippingCost(0));
+      .then(data => {
+        setShippingCost(data.shippingCost ?? 0);
+        setDeliveryDays(data.deliveryDays ?? null);
+        setNearestCenterName(data.nearestCenter ? `${data.nearestCenter.city} - ${data.nearestCenter.state}` : null);
+      })
+      .catch(() => {
+        setShippingCost(0);
+        setDeliveryDays(null);
+        setNearestCenterName(null);
+      });
   }, [location, items]);
 
   const handleCheckout = async () => {
