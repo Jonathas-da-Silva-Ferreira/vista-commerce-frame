@@ -189,7 +189,6 @@ export default function CartPage() {
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Frete</span>
-                  {/* Três estados possíveis: grátis, pago, ou sem CEP informado */}
                   {location ? (
                     shippingCost === 0 ? (
                       <span className="text-green-600 font-medium">Grátis</span>
@@ -200,6 +199,15 @@ export default function CartPage() {
                     <span className="text-muted-foreground text-xs">Informe o CEP</span>
                   )}
                 </div>
+                {/* Prazo e centro de envio — só exibe quando CEP foi calculado */}
+                {location && deliveryDays && (
+                  <div className="text-xs text-muted-foreground space-y-1">
+                    <p>📦 Entrega em até <span className="font-semibold text-foreground">{deliveryDays} dias úteis</span></p>
+                    {nearestCenterName && (
+                      <p>Enviado de {nearestCenterName}</p>
+                    )}
+                  </div>
+                )}
                 <div className="border-t pt-3 flex justify-between">
                   <span className="font-bold">Total</span>
                   {/* Soma subtotal + frete — se CEP não informado, shippingCost=0 */}
