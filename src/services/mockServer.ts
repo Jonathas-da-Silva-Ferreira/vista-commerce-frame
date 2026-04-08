@@ -7,15 +7,76 @@
  * Em produção, migrar para MSW ou backend real.
  */
 import { products as initialProducts, categories } from '@/data/mockData';
-import type { Product, Banner, PaginatedResponse } from '@/types';
+import type { Product, Banner, PaginatedResponse, DistributionCenter } from '@/types';
 
-// Cópia mutável do array original — permite POST/PATCH sem afetar dados base,
-// mas reseta ao recarregar a página (comportamento esperado em mock)
 const products: Product[] = [...initialProducts];
 
-// Delay artificial para simular latência de rede —
-// ajuda a testar loading states e prevenir race conditions no frontend
 const delay = (ms = 150) => new Promise(r => setTimeout(r, ms));
+
+// Centros de distribuição estrategicamente posicionados nas 5 regiões —
+// garante que qualquer cliente no Brasil tenha um centro a menos de ~2000km
+const distributionCenters: DistributionCenter[] = [
+  { id: 'cd-sp', name: 'CD São Paulo', city: 'São Paulo', state: 'SP', latitude: -23.55, longitude: -46.63 },
+  { id: 'cd-rj', name: 'CD Rio de Janeiro', city: 'Rio de Janeiro', state: 'RJ', latitude: -22.91, longitude: -43.17 },
+  { id: 'cd-pr', name: 'CD Curitiba', city: 'Curitiba', state: 'PR', latitude: -25.43, longitude: -49.27 },
+  { id: 'cd-df', name: 'CD Brasília', city: 'Brasília', state: 'DF', latitude: -15.78, longitude: -47.93 },
+  { id: 'cd-pe', name: 'CD Recife', city: 'Recife', state: 'PE', latitude: -8.05, longitude: -34.87 },
+  { id: 'cd-am', name: 'CD Manaus', city: 'Manaus', state: 'AM', latitude: -3.12, longitude: -60.02 },
+];
+
+/**
+ * Fórmula de Haversine — calcula distância entre dois pontos na superfície
+ * terrestre usando coordenadas geográficas. Precisão suficiente para estimativa
+ * de frete (~0.5% de erro vs Vincenty, mas 10x mais simples).
+ */
+function haversineDistance(
+  lat1: number, lng1: number,
+  lat2: number, lng2: number
+): number {
+  const R = 6371; // Raio médio da Terra em km
+  const toRad = (deg: number) => deg * (Math.PI / 180);
+
+  const dLat = toRad(lat2 - lat1);
+  const dLng = toRad(lng2 - lng1);
+
+  // Fórmula: a = sin²(Δlat/2) + cos(lat1) × cos(lat2) × sin²(Δlng/2)
+  const a = Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2;
+
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+/**
+ * Encontra o centro de distribuição mais próximo do cliente.
+ * Retorna o centro e a distância em km — usado para calcular frete e prazo.
+ */
+function findNearestCenter(lat: number, lng: number) {
+  let nearest = distributionCenters[0];
+  let minDist = Infinity;
+
+  for (const center of distributionCenters) {
+    const dist = haversineDistance(lat, lng, center.latitude, center.longitude);
+    if (dist < minDist) {
+      minDist = dist;
+      nearest = center;
+    }
+  }
+
+  return { center: nearest, distanceKm: Math.round(minDist) };
+}
+
+/**
+ * Calcula custo de frete e prazo baseado na distância.
+ * Faixas de distância calibradas para realidade brasileira:
+ * - <300km: mesmo estado ou estado vizinho → entrega rápida
+ * - 300-800km: inter-regional → prazo médio
+ * - >800km: longa distância → prazo estendido
+ */
+function calculateShippingByDistance(distanceKm: number) {
+  if (distanceKm <= 300) return { cost: 9.90, days: 2 };
+  if (distanceKm <= 800) return { cost: 19.90, days: 5 };
+  return { cost: 34.90, days: 8 };
+}
 
 type RouteHandler = (url: URL, init?: RequestInit) => Promise<Response>;
 
@@ -243,50 +304,49 @@ const routes: Array<{ pattern: RegExp; handler: RouteHandler }> = [
       return json({ cep, state: info.state, city: info.city, region });
     },
   },
-  // POST /api/shipping/calculate — cálculo de frete com 3 modos:
-  // 1. Por productId (página de detalhe)
-  // 2. Por lista de items (carrinho)
-  // 3. Genérico por região (fallback)
+  // GET /api/distribution-centers — lista de centros de distribuição
+  {
+    pattern: /^\/api\/distribution-centers$/,
+    handler: async () => {
+      await delay(100);
+      return json(distributionCenters);
+    },
+  },
+  // POST /api/shipping/calculate — cálculo avançado de frete baseado em distância.
+  // Recebe coordenadas do cliente, encontra CD mais próximo via Haversine,
+  // e retorna custo + prazo baseado em faixas de distância.
   {
     pattern: /^\/api\/shipping\/calculate$/,
     handler: async (_url, init) => {
       if (init?.method !== 'POST') return json({ error: 'Method not allowed' }, 405);
       await delay(150);
       const body = JSON.parse((init?.body as string) || '{}');
-      // Mapeia nome da região (pt-BR) para chave do objeto shipping —
-      // necessário porque a API de localização retorna nomes legíveis
-      const regionKey: Record<string, string> = {
-        'Sul': 'sul', 'Sudeste': 'sudeste', 'Centro-Oeste': 'centroOeste',
-        'Norte': 'norte', 'Nordeste': 'nordeste',
-      };
-      const key = regionKey[body.region] || 'sudeste';
 
-      // Modo 1: frete específico de um produto (página de detalhe)
-      if (body.productId) {
-        const product = products.find(p => p.id === body.productId);
-        const shipping = product?.shipping || { sul: 0, sudeste: 0, centroOeste: 0, norte: 25, nordeste: 20 };
-        const cost = (shipping as Record<string, number>)[key] ?? 0;
-        return json({ shippingCost: cost, isFreeShipping: cost === 0 });
+      const { latitude, longitude } = body;
+
+      // Se coordenadas não foram enviadas, usa fallback por região (compatibilidade)
+      if (latitude == null || longitude == null) {
+        const regionKey: Record<string, string> = {
+          'Sul': 'sul', 'Sudeste': 'sudeste', 'Centro-Oeste': 'centroOeste',
+          'Norte': 'norte', 'Nordeste': 'nordeste',
+        };
+        const key = regionKey[body.region] || 'sudeste';
+        const defaultShipping: Record<string, number> = { sul: 0, sudeste: 0, centroOeste: 0, norte: 25, nordeste: 20 };
+        const cost = defaultShipping[key] ?? 0;
+        return json({ shippingCost: cost, isFreeShipping: cost === 0, deliveryDays: 5, nearestCenter: distributionCenters[0], distanceKm: 0 });
       }
 
-      // Modo 2: soma frete de múltiplos produtos (carrinho)
-      // Cada produto pode ter frete diferente — soma individual é mais justo
-      // do que aplicar frete único para todos
-      if (body.items && Array.isArray(body.items)) {
-        let totalCost = 0;
-        for (const item of body.items) {
-          const product = products.find(p => p.id === item.productId);
-          const shipping = product?.shipping || { sul: 0, sudeste: 0, centroOeste: 0, norte: 25, nordeste: 20 };
-          const cost = (shipping as Record<string, number>)[key] ?? 0;
-          totalCost += cost;
-        }
-        return json({ shippingCost: totalCost, isFreeShipping: totalCost === 0 });
-      }
+      // Cálculo principal: encontra CD mais próximo e deriva custo/prazo
+      const { center, distanceKm } = findNearestCenter(latitude, longitude);
+      const { cost, days } = calculateShippingByDistance(distanceKm);
 
-      // Modo 3: fallback genérico — usado quando não há contexto de produto
-      const defaultShipping: Record<string, number> = { sul: 0, sudeste: 0, centroOeste: 0, norte: 25, nordeste: 20 };
-      const cost = defaultShipping[key] ?? 0;
-      return json({ shippingCost: cost, isFreeShipping: cost === 0 });
+      return json({
+        shippingCost: cost,
+        isFreeShipping: cost === 0,
+        deliveryDays: days,
+        nearestCenter: center,
+        distanceKm,
+      });
     },
   },
   // POST /api/contact — formulário de contato

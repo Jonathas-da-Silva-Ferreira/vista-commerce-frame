@@ -15,29 +15,38 @@ export default function CartPage() {
   // o cálculo depende da combinação específica de items + região,
   // e cada página pode ter necessidades diferentes de frete
   const [shippingCost, setShippingCost] = useState(0);
+  const [deliveryDays, setDeliveryDays] = useState<number | null>(null);
+  const [nearestCenterName, setNearestCenterName] = useState<string | null>(null);
 
   // Recalcula frete sempre que localização ou items mudam —
   // envia lista de productIds para o backend calcular frete individual por produto
   useEffect(() => {
     if (!location || items.length === 0) {
       setShippingCost(0);
+      setDeliveryDays(null);
+      setNearestCenterName(null);
       return;
     }
     fetch('/api/shipping/calculate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        region: location.region,
-        // Envia apenas IDs — o backend já tem os dados de frete de cada produto,
-        // evitando enviar dados sensíveis (preço do frete) do client
+        latitude: location.latitude,
+        longitude: location.longitude,
         items: items.map(i => ({ productId: i.product.id })),
       }),
     })
       .then(r => r.json())
-      .then(data => setShippingCost(data.shippingCost ?? 0))
-      // Falha silenciosa no frete — melhor mostrar subtotal sem frete
-      // do que quebrar toda a página do carrinho
-      .catch(() => setShippingCost(0));
+      .then(data => {
+        setShippingCost(data.shippingCost ?? 0);
+        setDeliveryDays(data.deliveryDays ?? null);
+        setNearestCenterName(data.nearestCenter ? `${data.nearestCenter.city} - ${data.nearestCenter.state}` : null);
+      })
+      .catch(() => {
+        setShippingCost(0);
+        setDeliveryDays(null);
+        setNearestCenterName(null);
+      });
   }, [location, items]);
 
   const handleCheckout = async () => {
@@ -180,7 +189,6 @@ export default function CartPage() {
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Frete</span>
-                  {/* Três estados possíveis: grátis, pago, ou sem CEP informado */}
                   {location ? (
                     shippingCost === 0 ? (
                       <span className="text-green-600 font-medium">Grátis</span>
@@ -191,6 +199,15 @@ export default function CartPage() {
                     <span className="text-muted-foreground text-xs">Informe o CEP</span>
                   )}
                 </div>
+                {/* Prazo e centro de envio — só exibe quando CEP foi calculado */}
+                {location && deliveryDays && (
+                  <div className="text-xs text-muted-foreground space-y-1">
+                    <p>📦 Entrega em até <span className="font-semibold text-foreground">{deliveryDays} dias úteis</span></p>
+                    {nearestCenterName && (
+                      <p>Enviado de {nearestCenterName}</p>
+                    )}
+                  </div>
+                )}
                 <div className="border-t pt-3 flex justify-between">
                   <span className="font-bold">Total</span>
                   {/* Soma subtotal + frete — se CEP não informado, shippingCost=0 */}

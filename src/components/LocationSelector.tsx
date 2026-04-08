@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { MapPin, Loader2, X } from 'lucide-react';
+import { MapPin, Loader2, X, Warehouse, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useLocation } from '@/contexts/LocationContext';
@@ -42,10 +42,10 @@ export default function LocationSelector() {
           )}
         </button>
       </PopoverTrigger>
-      <PopoverContent className="w-72 p-4" align="start">
+      <PopoverContent className="w-80 p-4" align="start">
         <div className="space-y-3">
           <div className="flex items-center justify-between">
-            <h4 className="font-semibold text-sm">Calcular frete</h4>
+            <h4 className="font-semibold text-sm">Calcular frete e prazo</h4>
             {location && (
               <button onClick={clearLocation} className="text-muted-foreground hover:text-foreground">
                 <X className="w-4 h-4" />
@@ -69,9 +69,27 @@ export default function LocationSelector() {
           {error && <p className="text-xs text-destructive">{error}</p>}
 
           {location && shipping && (
-            <div className="text-sm space-y-1 pt-1 border-t border-border">
+            <div className="text-sm space-y-2 pt-2 border-t border-border">
               <p className="font-medium">{location.city || location.state} - {location.state}</p>
               <p className="text-muted-foreground text-xs">Região: {location.region}</p>
+
+              {/* Prazo de entrega — informação mais importante para o cliente */}
+              <div className="flex items-center gap-2 text-xs">
+                <Clock className="w-3.5 h-3.5 text-primary" />
+                <span>Entrega em até <span className="font-semibold">{shipping.deliveryDays} dias úteis</span></span>
+              </div>
+
+              {/* Centro de distribuição — transparência sobre origem do envio */}
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <Warehouse className="w-3.5 h-3.5" />
+                <span>Enviado de {shipping.nearestCenter.city} - {shipping.nearestCenter.state}</span>
+              </div>
+
+              {/* Distância calculada — dado técnico que valida o cálculo */}
+              <p className="text-[10px] text-muted-foreground">
+                Distância: ~{shipping.distanceKm} km
+              </p>
+
               {shipping.isFreeShipping ? (
                 <p className="text-sm font-semibold text-green-500">✓ Frete Grátis</p>
               ) : (
