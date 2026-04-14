@@ -7,7 +7,7 @@
  * Em produção, migrar para MSW ou backend real.
  */
 import { products as initialProducts, categories } from '@/data/mockData';
-import type { Product, Banner, PaginatedResponse, DistributionCenter } from '@/types';
+import type { Product, Banner, PaginatedResponse, DistributionCenter, Carrier, ShippingOption } from '@/types';
 
 const products: Product[] = [...initialProducts];
 

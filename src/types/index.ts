@@ -76,6 +76,41 @@ export interface ShippingResult {
   distanceKm: number;
 }
 
+// Transportadora com multiplicador de distância —
+// permite escalar o custo base proporcionalmente à distância real
+export interface Carrier {
+  id: string;
+  name: string;
+  basePrice: number;
+  distanceMultiplier: number;
+  baseDays: number;
+  // Tag exibida ao lado da sugestão inteligente ("Mais barato", "Mais rápido", etc.)
+  tag?: string;
+}
+
+// Opção calculada de frete para uma transportadora específica —
+// combina dados da Carrier com distância real para gerar preço/prazo finais
+export interface ShippingOption {
+  carrier: Carrier;
+  cost: number;
+  days: number;
+  isFreeShipping: boolean;
+  // Recomendação inteligente baseada em custo-benefício
+  recommendation?: 'cheapest' | 'fastest' | 'best-value';
+}
+
+// Resultado de frete por vendedor — agrupa opções de transportadora
+// com o centro de distribuição mais próximo do vendedor
+export interface SellerShippingResult {
+  sellerId: string;
+  sellerName: string;
+  nearestCenter: DistributionCenter;
+  distanceKm: number;
+  options: ShippingOption[];
+  // Opção selecionada pelo usuário (default: melhor custo-benefício)
+  selectedOptionId?: string;
+}
+
 export interface ApiResponse<T> {
   data: T;
   success: boolean;
