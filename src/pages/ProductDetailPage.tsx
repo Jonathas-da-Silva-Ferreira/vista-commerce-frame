@@ -50,28 +50,30 @@ function ImageGallery({ images, name }: { images: string[]; name: string }) {
   );
 }
 
-// Calculadora de frete avançada — exibe custo, prazo e centro de envio
+// Labels de recomendação para cada tipo de sugestão inteligente
+const RECOMMENDATION_LABELS: Record<string, { label: string; icon: typeof Zap }> = {
+  cheapest: { label: 'Mais barato', icon: DollarSign },
+  fastest: { label: 'Mais rápido', icon: Zap },
+  'best-value': { label: 'Melhor custo-benefício', icon: Award },
+};
+
+// Calculadora de frete avançada — exibe múltiplas transportadoras com sugestão inteligente
 function ShippingCalculator({ productId }: { productId: string }) {
   const { location, loading: locLoading, error, calculateShipping } = useLocation();
   const [cep, setCep] = useState('');
-  const [shippingResult, setShippingResult] = useState<{
-    shippingCost: number;
-    isFreeShipping: boolean;
-    deliveryDays: number;
-    nearestCenter: { name: string; city: string; state: string };
-    distanceKm: number;
-  } | null>(null);
+  const [shippingOptions, setShippingOptions] = useState<ShippingOption[]>([]);
+  const [nearestCenter, setNearestCenter] = useState<{ name: string; city: string; state: string } | null>(null);
+  const [distanceKm, setDistanceKm] = useState(0);
 
   const formatCep = (v: string) => {
     const d = v.replace(/\D/g, '').slice(0, 8);
     return d.length > 5 ? `${d.slice(0, 5)}-${d.slice(5)}` : d;
   };
 
-  // Recalcula frete quando localização muda — envia coordenadas
-  // para cálculo por distância via Haversine no backend
+  // Busca opções de transportadora quando localização muda
   useEffect(() => {
     if (location) {
-      fetch('/api/shipping/calculate', {
+      fetch('/api/shipping/options', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -81,7 +83,11 @@ function ShippingCalculator({ productId }: { productId: string }) {
         }),
       })
         .then(r => r.json())
-        .then(setShippingResult)
+        .then(data => {
+          setShippingOptions(data.options || []);
+          setNearestCenter(data.nearestCenter || null);
+          setDistanceKm(data.distanceKm || 0);
+        })
         .catch(() => {});
     }
   }, [location, productId]);
@@ -105,20 +111,40 @@ function ShippingCalculator({ productId }: { productId: string }) {
       </form>
       {error && <p className="text-xs text-destructive">{error}</p>}
 
-      {/* Resultado avançado: custo, prazo, origem e distância */}
-      {shippingResult && location && (
-        <div className="bg-muted/50 rounded-lg p-3 space-y-2 text-sm">
-          {shippingResult.isFreeShipping ? (
-            <p className="font-semibold text-green-500">✓ Frete Grátis para {location.city || location.state}</p>
-          ) : (
-            <p>Frete para {location.city}: <span className="font-semibold text-primary">R$ {shippingResult.shippingCost.toFixed(2)}</span></p>
-          )}
-          <p className="flex items-center gap-1.5 text-muted-foreground text-xs">
-            <span>📦 Entrega em até <span className="font-semibold text-foreground">{shippingResult.deliveryDays} dias úteis</span></span>
-          </p>
+      {/* Opções de transportadora com recomendação inteligente */}
+      {shippingOptions.length > 0 && location && (
+        <div className="bg-muted/50 rounded-lg p-3 space-y-3 text-sm">
           <p className="text-xs text-muted-foreground">
-            Enviado de {shippingResult.nearestCenter.city} - {shippingResult.nearestCenter.state} (~{shippingResult.distanceKm} km)
+            Entrega para {location.city || location.state} • Enviado de {nearestCenter?.city} (~{distanceKm} km)
           </p>
+          <div className="space-y-2">
+            {shippingOptions.map(option => {
+              const rec = option.recommendation ? RECOMMENDATION_LABELS[option.recommendation] : null;
+              return (
+                <div
+                  key={option.carrier.id}
+                  className={`flex items-center justify-between p-2.5 rounded-lg border ${
+                    option.recommendation === 'best-value' ? 'border-primary bg-primary/5' : 'border-border'
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <Truck className="w-4 h-4 text-muted-foreground" />
+                    <span className="font-medium">{option.carrier.name}</span>
+                    {rec && (
+                      <span className="text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded font-semibold flex items-center gap-0.5">
+                        <rec.icon className="w-3 h-3" />
+                        {rec.label}
+                      </span>
+                    )}
+                  </div>
+                  <div className="text-right">
+                    <span className="font-semibold text-primary">{formatCurrency(option.cost)}</span>
+                    <span className="text-xs text-muted-foreground ml-1.5">{option.days} dias</span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
       )}
 
