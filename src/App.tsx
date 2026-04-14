@@ -17,6 +17,7 @@ import FavoritesPage from "./pages/FavoritesPage";
 import LoginPage from "./pages/LoginPage";
 import SellProductPage from "./pages/SellProductPage";
 import ContactPage from "./pages/ContactPage";
+import LogisticsDashboardPage from "./pages/LogisticsDashboardPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
