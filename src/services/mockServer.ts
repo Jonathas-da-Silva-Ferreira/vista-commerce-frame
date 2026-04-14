@@ -383,6 +383,53 @@ const routes: Array<{ pattern: RegExp; handler: RouteHandler }> = [
       });
     },
   },
+  // GET /api/shipping/options — retorna opções de todas as transportadoras
+  // para uma coordenada. Usado na página de produto e carrinho para o
+  // usuário escolher entre Econômico/Padrão/Expresso.
+  {
+    pattern: /^\/api\/shipping\/options$/,
+    handler: async (_url, init) => {
+      if (init?.method !== 'POST') return json({ error: 'Method not allowed' }, 405);
+      await delay(150);
+      const body = JSON.parse((init?.body as string) || '{}');
+      const { latitude, longitude } = body;
+      if (latitude == null || longitude == null) return json({ error: 'Coordenadas obrigatórias' }, 400);
+
+      // Se recebeu array de sellers, calcula frete por vendedor separadamente
+      const sellers: Array<{ sellerId: string; sellerName: string }> = body.sellers || [];
+      if (sellers.length > 0) {
+        // Frete por vendedor — cada vendedor pode ter CD mais próximo diferente
+        // dependendo de sua localização de origem
+        const results = sellers.map(s => {
+          const { center, distanceKm } = findNearestCenter(latitude, longitude);
+          const options = calculateShippingOptions(distanceKm);
+          return { sellerId: s.sellerId, sellerName: s.sellerName, nearestCenter: center, distanceKm, options };
+        });
+        return json(results);
+      }
+
+      // Cálculo simples para produto individual
+      const { center, distanceKm } = findNearestCenter(latitude, longitude);
+      const options = calculateShippingOptions(distanceKm);
+      return json({ nearestCenter: center, distanceKm, options });
+    },
+  },
+  // GET /api/logistics/dashboard — dados agregados para painel logístico
+  {
+    pattern: /^\/api\/logistics\/dashboard$/,
+    handler: async () => {
+      await delay(200);
+      return json({
+        totalOrders: 156,
+        avgDeliveryDays: 4.2,
+        avgShippingCost: 18.50,
+        freeShippingRate: 0.35,
+        regionBreakdown: {
+          Sudeste: 45, Sul: 22, Nordeste: 18, 'Centro-Oeste': 10, Norte: 5,
+        },
+      });
+    },
+  },
   // POST /api/contact — formulário de contato
   {
     pattern: /^\/api\/contact$/,
