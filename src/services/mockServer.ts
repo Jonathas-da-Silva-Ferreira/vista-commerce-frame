@@ -7,7 +7,7 @@
  * Em produção, migrar para MSW ou backend real.
  */
 import { products as initialProducts, categories } from '@/data/mockData';
-import type { Product, Banner, PaginatedResponse, DistributionCenter } from '@/types';
+import type { Product, Banner, PaginatedResponse, DistributionCenter, Carrier, ShippingOption } from '@/types';
 
 const products: Product[] = [...initialProducts];
 
@@ -24,6 +24,15 @@ const distributionCenters: DistributionCenter[] = [
   { id: 'cd-am', name: 'CD Manaus', city: 'Manaus', state: 'AM', latitude: -3.12, longitude: -60.02 },
 ];
 
+// Transportadoras disponíveis — cada uma com perfil diferente de custo/prazo.
+// O multiplicador de distância escala o basePrice proporcionalmente à distância,
+// permitindo que rotas mais longas fiquem progressivamente mais caras.
+const carriers: Carrier[] = [
+  { id: 'economico', name: 'Econômico', basePrice: 5.90, distanceMultiplier: 0.008, baseDays: 8 },
+  { id: 'padrao', name: 'Padrão', basePrice: 9.90, distanceMultiplier: 0.012, baseDays: 5 },
+  { id: 'expresso', name: 'Expresso', basePrice: 18.90, distanceMultiplier: 0.02, baseDays: 2 },
+];
+
 /**
  * Fórmula de Haversine — calcula distância entre dois pontos na superfície
  * terrestre usando coordenadas geográficas. Precisão suficiente para estimativa
@@ -33,13 +42,12 @@ function haversineDistance(
   lat1: number, lng1: number,
   lat2: number, lng2: number
 ): number {
-  const R = 6371; // Raio médio da Terra em km
+  const R = 6371;
   const toRad = (deg: number) => deg * (Math.PI / 180);
 
   const dLat = toRad(lat2 - lat1);
   const dLng = toRad(lng2 - lng1);
 
-  // Fórmula: a = sin²(Δlat/2) + cos(lat1) × cos(lat2) × sin²(Δlng/2)
   const a = Math.sin(dLat / 2) ** 2 +
     Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2;
 
@@ -48,7 +56,6 @@ function haversineDistance(
 
 /**
  * Encontra o centro de distribuição mais próximo do cliente.
- * Retorna o centro e a distância em km — usado para calcular frete e prazo.
  */
 function findNearestCenter(lat: number, lng: number) {
   let nearest = distributionCenters[0];
@@ -66,11 +73,38 @@ function findNearestCenter(lat: number, lng: number) {
 }
 
 /**
- * Calcula custo de frete e prazo baseado na distância.
- * Faixas de distância calibradas para realidade brasileira:
- * - <300km: mesmo estado ou estado vizinho → entrega rápida
- * - 300-800km: inter-regional → prazo médio
- * - >800km: longa distância → prazo estendido
+ * Calcula opções de frete para cada transportadora com base na distância.
+ * Preço final = basePrice + (distância × multiplicador).
+ * Prazo estimado = baseDays + dias extras por faixa de distância.
+ */
+function calculateShippingOptions(distanceKm: number): ShippingOption[] {
+  // Dias extras baseados em faixa de distância — simula tempo real de trânsito
+  const extraDays = distanceKm <= 300 ? 0 : distanceKm <= 800 ? 2 : 4;
+
+  const options: ShippingOption[] = carriers.map(carrier => {
+    const rawCost = carrier.basePrice + distanceKm * carrier.distanceMultiplier;
+    // Arredonda para 2 decimais — evita preços como R$ 19.9037
+    const cost = Math.round(rawCost * 100) / 100;
+    const days = carrier.baseDays + extraDays;
+    return { carrier, cost, days, isFreeShipping: false };
+  });
+
+  // Ordena por custo para identificar mais barato e mais rápido
+  const sorted = [...options].sort((a, b) => a.cost - b.cost);
+  sorted[0].recommendation = 'cheapest';
+  
+  const fastest = [...options].sort((a, b) => a.days - b.days);
+  fastest[0].recommendation = 'fastest';
+
+  // Melhor custo-benefício: score = custo × prazo — equilibra ambos fatores
+  const bestValue = [...options].sort((a, b) => (a.cost * a.days) - (b.cost * b.days));
+  if (!bestValue[0].recommendation) bestValue[0].recommendation = 'best-value';
+
+  return options;
+}
+
+/**
+ * Calcula custo legado baseado em faixa de distância (compatibilidade).
  */
 function calculateShippingByDistance(distanceKm: number) {
   if (distanceKm <= 300) return { cost: 9.90, days: 2 };
@@ -346,6 +380,53 @@ const routes: Array<{ pattern: RegExp; handler: RouteHandler }> = [
         deliveryDays: days,
         nearestCenter: center,
         distanceKm,
+      });
+    },
+  },
+  // GET /api/shipping/options — retorna opções de todas as transportadoras
+  // para uma coordenada. Usado na página de produto e carrinho para o
+  // usuário escolher entre Econômico/Padrão/Expresso.
+  {
+    pattern: /^\/api\/shipping\/options$/,
+    handler: async (_url, init) => {
+      if (init?.method !== 'POST') return json({ error: 'Method not allowed' }, 405);
+      await delay(150);
+      const body = JSON.parse((init?.body as string) || '{}');
+      const { latitude, longitude } = body;
+      if (latitude == null || longitude == null) return json({ error: 'Coordenadas obrigatórias' }, 400);
+
+      // Se recebeu array de sellers, calcula frete por vendedor separadamente
+      const sellers: Array<{ sellerId: string; sellerName: string }> = body.sellers || [];
+      if (sellers.length > 0) {
+        // Frete por vendedor — cada vendedor pode ter CD mais próximo diferente
+        // dependendo de sua localização de origem
+        const results = sellers.map(s => {
+          const { center, distanceKm } = findNearestCenter(latitude, longitude);
+          const options = calculateShippingOptions(distanceKm);
+          return { sellerId: s.sellerId, sellerName: s.sellerName, nearestCenter: center, distanceKm, options };
+        });
+        return json(results);
+      }
+
+      // Cálculo simples para produto individual
+      const { center, distanceKm } = findNearestCenter(latitude, longitude);
+      const options = calculateShippingOptions(distanceKm);
+      return json({ nearestCenter: center, distanceKm, options });
+    },
+  },
+  // GET /api/logistics/dashboard — dados agregados para painel logístico
+  {
+    pattern: /^\/api\/logistics\/dashboard$/,
+    handler: async () => {
+      await delay(200);
+      return json({
+        totalOrders: 156,
+        avgDeliveryDays: 4.2,
+        avgShippingCost: 18.50,
+        freeShippingRate: 0.35,
+        regionBreakdown: {
+          Sudeste: 45, Sul: 22, Nordeste: 18, 'Centro-Oeste': 10, Norte: 5,
+        },
       });
     },
   },
