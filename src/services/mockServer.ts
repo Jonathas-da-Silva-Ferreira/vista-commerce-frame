@@ -7,9 +7,14 @@
  * Em produção, migrar para MSW ou backend real.
  */
 import { products as initialProducts, categories } from '@/data/mockData';
-import type { Product, Banner, PaginatedResponse, DistributionCenter, Carrier, ShippingOption } from '@/types';
+import type { Product, Banner, PaginatedResponse, DistributionCenter, Carrier, ShippingOption, Review } from '@/types';
 
 const products: Product[] = [...initialProducts];
+
+// Store em memória de reviews — chave = productId para lookup O(1).
+// Em produção, substituir por tabela relacional com índice em (product_id, user_id)
+// para garantir constraint UNIQUE que previne reviews duplicadas no nível do banco.
+const reviewsStore: Record<string, Review[]> = {};
 
 const delay = (ms = 150) => new Promise(r => setTimeout(r, ms));
 
@@ -439,6 +444,81 @@ const routes: Array<{ pattern: RegExp; handler: RouteHandler }> = [
       const body = JSON.parse(init.body as string);
       console.debug('[MockServer] Contact received:', body);
       return json({ success: true, message: 'Mensagem recebida com sucesso' }, 201);
+    },
+  },
+  // GET/POST /api/products/:id/reviews — listagem e criação de avaliações.
+  // Endpoint aninhado mantém a relação produto→reviews explícita na URL,
+  // facilitando cache HTTP por produto e RLS no futuro backend.
+  {
+    pattern: /^\/api\/products\/([^/?]+)\/reviews$/,
+    handler: async (url, init) => {
+      const id = url.pathname.match(/\/api\/products\/([^/?]+)\/reviews$/)?.[1] || '';
+      const list = reviewsStore[id] || [];
+
+      if (!init || init.method === 'GET' || init.method === undefined) {
+        await delay(150);
+        // Ordena do mais recente para o mais antigo — padrão de UX em reviews
+        // (usuário quer ver primeiro o que aconteceu por último).
+        const sorted = [...list].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+        // Média calculada no servidor para garantir consistência —
+        // evita divergência entre clients que possam arredondar diferente.
+        const average = sorted.length
+          ? sorted.reduce((s, r) => s + r.rating, 0) / sorted.length
+          : 0;
+        return json({
+          reviews: sorted,
+          average: Math.round(average * 10) / 10,
+          total: sorted.length,
+        });
+      }
+
+      if (init.method === 'POST') {
+        await delay(250);
+        const body = JSON.parse((init.body as string) || '{}');
+        const rating = Number(body.rating);
+        const comment = String(body.comment || '').trim();
+        const userId = String(body.userId || '');
+        const userName = String(body.userName || '').trim();
+
+        // Validações de negócio centralizadas no handler — mantém contrato realístico
+        // mesmo com mock, para que o frontend não dependa de mocks "permissivos".
+        if (!userId || !userName) return json({ error: 'Usuário inválido' }, 401);
+        if (!Number.isInteger(rating) || rating < 1 || rating > 5) {
+          return json({ error: 'Nota deve ser um inteiro entre 1 e 5' }, 400);
+        }
+        if (comment.length < 5) return json({ error: 'Comentário muito curto' }, 400);
+
+        // Regra: 1 review por usuário por produto. Status 409 (Conflict) é
+        // semanticamente correto para violação de unicidade.
+        if (list.some(r => r.userId === userId)) {
+          return json({ error: 'Você já avaliou este produto.' }, 409);
+        }
+
+        const review: Review = {
+          id: crypto.randomUUID(),
+          productId: id,
+          userId,
+          userName,
+          rating,
+          comment,
+          createdAt: new Date().toISOString(),
+        };
+        reviewsStore[id] = [...list, review];
+
+        // Atualiza rating/reviewCount do produto — mantém consistência com cards
+        // de produto que exibem esses campos sem refetch dos reviews.
+        const product = products.find(p => p.id === id);
+        if (product) {
+          const all = reviewsStore[id];
+          const avg = all.reduce((s, r) => s + r.rating, 0) / all.length;
+          product.rating = Math.round(avg * 10) / 10;
+          product.reviewCount = all.length;
+        }
+
+        return json(review, 201);
+      }
+
+      return json({ error: 'Method not allowed' }, 405);
     },
   },
 ];

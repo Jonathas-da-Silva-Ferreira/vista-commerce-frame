@@ -10,6 +10,7 @@ import { useProduct, useCategories, useRelatedProducts } from '@/hooks/useApi';
 import { useLocation } from '@/contexts/LocationContext';
 import { Input } from '@/components/ui/input';
 import { formatCurrency } from '@/lib/utils';
+import { ProductReviews } from '@/components/reviews/ProductReviews';
 import type { ShippingOption } from '@/types';
 
 // Componente isolado de galeria — estado de imagem selecionada é local
@@ -353,9 +354,13 @@ export default function ProductDetailPage() {
           </div>
         </div>
 
+        {/* Avaliações dos clientes — logo após o bloco de compra para reforçar
+            prova social no momento de decisão, antes de produtos relacionados. */}
+        <ProductReviews productId={product.id} />
+
         {/* Produtos relacionados — exibido apenas se houver itens na mesma categoria */}
         {relatedProducts.length > 0 && (
-          <section className="border-t border-border pt-10">
+          <section className="border-t border-border pt-10 mt-10">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-2xl font-bold">Produtos Relacionados</h2>
               <span className="text-xs text-muted-foreground bg-muted px-3 py-1 rounded-full">🤖 IA em breve</span>
