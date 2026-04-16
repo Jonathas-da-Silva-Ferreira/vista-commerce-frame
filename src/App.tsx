@@ -36,6 +36,13 @@ const App = () => (
               <Routes>
                 <Route path="/" element={<HomePage />} />
                 <Route path="/produtos" element={<ProductsPage />} />
+                {/*
+                  Rota /categoria/:slug — alias semântico para ProductsPage.
+                  Mantemos /produtos?categoria=X como fonte única da listagem
+                  (ProductsPage já lê o slug e aplica filtros), mas expomos
+                  uma URL mais limpa e amigável para SEO/compartilhamento.
+                */}
+                <Route path="/categoria/:slug" element={<ProductsPage />} />
                 <Route path="/produto/:id" element={<ProductDetailPage />} />
                 <Route path="/carrinho" element={<CartPage />} />
                 <Route path="/favoritos" element={<FavoritesPage />} />

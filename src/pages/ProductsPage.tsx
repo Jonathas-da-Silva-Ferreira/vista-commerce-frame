@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useParams } from 'react-router-dom';
 import { Filter, X } from 'lucide-react';
 import MainLayout from '@/components/layout/MainLayout';
 import SearchBar from '@/components/SearchBar';
@@ -14,12 +14,17 @@ const ITEMS_PER_PAGE = 8;
 
 export default function ProductsPage() {
   const [searchParams, setSearchParams] = useSearchParams();
+  // useParams captura o :slug quando a rota é /categoria/:slug.
+  // Mantemos compat com ?categoria=X (CategoryGrid e links antigos)
+  // para evitar refactor em cascata e quebrar URLs já compartilhadas.
+  const { slug: routeSlug } = useParams<{ slug: string }>();
   const [showFilters, setShowFilters] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [filterState, setFilterState] = useState<FilterState>({ ...defaultFilterState });
 
   const query = searchParams.get('q') || '';
-  const categorySlug = searchParams.get('categoria') || '';
+  // Prioridade: slug da rota (URL semântica/SEO) > query param (legado).
+  const categorySlug = routeSlug || searchParams.get('categoria') || '';
 
   const isSpecialFeatured = categorySlug === 'melhores-produtos';
   const isSpecialPromotion = categorySlug === 'promocao';
