@@ -111,6 +111,29 @@ export interface SellerShippingResult {
   selectedOptionId?: string;
 }
 
+// Avaliação de produto — modelo unificado para listagem e criação.
+// userId é mantido separado de userName para permitir bloqueio de duplicidade
+// (uma avaliação por usuário/produto) sem depender de string mutável (nome).
+export interface Review {
+  id: string;
+  productId: string;
+  userId: string;
+  userName: string;
+  // Rating numérico 1-5; meia-estrela é exibida via média agregada,
+  // não permitida no input para simplificar UX e validação.
+  rating: number;
+  comment: string;
+  createdAt: string; // ISO 8601 — facilita ordenação e formatação i18n
+}
+
+// Resumo agregado retornado junto com a lista — evita recalcular no client
+// e mantém consistência caso a média seja ponderada no futuro.
+export interface ReviewsSummary {
+  reviews: Review[];
+  average: number;
+  total: number;
+}
+
 export interface ApiResponse<T> {
   data: T;
   success: boolean;
