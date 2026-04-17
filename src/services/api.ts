@@ -1,4 +1,4 @@
-import type { Product, Category, Banner, PaginatedResponse } from '@/types';
+import type { Product, Category, Banner, PaginatedResponse, AboutContent, HistoryContent, TermsContent } from '@/types';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || '';
 
@@ -75,6 +75,20 @@ class ApiService {
   // Search
   async search(query: string): Promise<Product[]> {
     return this.request<Product[]>(`/api/search?q=${encodeURIComponent(query)}`);
+  }
+
+  // Institutional — métodos tipados individualmente para que o TS infira
+  // o shape correto em cada página (about ≠ history ≠ terms).
+  async getAbout(): Promise<AboutContent> {
+    return this.request<AboutContent>('/api/institutional/about');
+  }
+
+  async getHistory(): Promise<HistoryContent> {
+    return this.request<HistoryContent>('/api/institutional/history');
+  }
+
+  async getTerms(): Promise<TermsContent> {
+    return this.request<TermsContent>('/api/institutional/terms');
   }
 }
 

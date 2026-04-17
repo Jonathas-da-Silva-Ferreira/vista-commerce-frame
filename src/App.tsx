@@ -18,6 +18,9 @@ import LoginPage from "./pages/LoginPage";
 import SellProductPage from "./pages/SellProductPage";
 import ContactPage from "./pages/ContactPage";
 import LogisticsDashboardPage from "./pages/LogisticsDashboardPage";
+import AboutPage from "./pages/AboutPage";
+import HistoryPage from "./pages/HistoryPage";
+import TermsPage from "./pages/TermsPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -50,6 +53,10 @@ const App = () => (
                 <Route path="/vender" element={<SellProductPage />} />
                 <Route path="/contato" element={<ContactPage />} />
                 <Route path="/logistica" element={<LogisticsDashboardPage />} />
+                {/* Rotas institucionais — páginas estáticas servidas via mock API */}
+                <Route path="/sobre" element={<AboutPage />} />
+                <Route path="/historia" element={<HistoryPage />} />
+                <Route path="/termos" element={<TermsPage />} />
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />
               </Routes>

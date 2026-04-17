@@ -157,3 +157,45 @@ export interface Banner {
   link?: string;
   buttonText?: string;
 }
+
+// --- Conteúdo institucional ---------------------------------------------------
+// Tipos modelados como "seções genéricas" (id/title/body) para permitir
+// adição/remoção de blocos sem mudança de schema. Evita interfaces "frágeis"
+// como { mission: string; vision: string; values: string } que exigiriam
+// migration toda vez que o time quiser um novo bloco.
+
+export interface ContentSection {
+  id: string;
+  title: string;
+  body: string;
+}
+
+export interface AboutContent {
+  companyName: string;
+  tagline: string;
+  description: string;
+  sections: ContentSection[];
+}
+
+// Marco da timeline — year é string (não number) porque pode incluir
+// formatos como "2024 Q3" ou "Mar/2025" no futuro sem quebrar o tipo.
+export interface HistoryMilestone {
+  year: string;
+  title: string;
+  description: string;
+}
+
+export interface HistoryContent {
+  title: string;
+  intro: string;
+  milestones: HistoryMilestone[];
+}
+
+export interface TermsContent {
+  title: string;
+  // ISO 8601 — formatação de data fica a cargo do componente (Intl.DateTimeFormat),
+  // não do conteúdo, para respeitar o locale do usuário.
+  lastUpdated: string;
+  intro: string;
+  sections: ContentSection[];
+}

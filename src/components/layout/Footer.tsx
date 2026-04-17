@@ -1,5 +1,7 @@
 import { Link } from 'react-router-dom';
 
+// Links centralizados em constante para que adição/remoção seja trivial
+// e o JSX permaneça declarativo. As rotas batem 1:1 com as definidas em App.tsx.
 const footerLinks = [
   { label: 'História', to: '/historia' },
   { label: 'Sobre Nós', to: '/sobre' },
