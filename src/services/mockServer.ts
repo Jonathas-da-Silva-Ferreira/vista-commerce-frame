@@ -7,6 +7,7 @@
  * Em produção, migrar para MSW ou backend real.
  */
 import { products as initialProducts, categories } from '@/data/mockData';
+import { aboutContent, historyContent, termsContent } from '@/data/institutionalContent';
 import type { Product, Banner, PaginatedResponse, DistributionCenter, Carrier, ShippingOption, Review } from '@/types';
 
 const products: Product[] = [...initialProducts];
@@ -519,6 +520,31 @@ const routes: Array<{ pattern: RegExp; handler: RouteHandler }> = [
       }
 
       return json({ error: 'Method not allowed' }, 405);
+    },
+  },
+  // --- Conteúdo institucional ------------------------------------------------
+  // Endpoints separados (não um único /institutional) para permitir cache HTTP
+  // independente — termos mudam raramente, "sobre" muda às vezes, e cada um
+  // pode ter TTL próprio quando migrar para backend real com CDN.
+  {
+    pattern: /^\/api\/institutional\/about$/,
+    handler: async () => {
+      await delay(80);
+      return json(aboutContent);
+    },
+  },
+  {
+    pattern: /^\/api\/institutional\/history$/,
+    handler: async () => {
+      await delay(80);
+      return json(historyContent);
+    },
+  },
+  {
+    pattern: /^\/api\/institutional\/terms$/,
+    handler: async () => {
+      await delay(80);
+      return json(termsContent);
     },
   },
 ];
