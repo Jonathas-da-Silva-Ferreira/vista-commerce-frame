@@ -8,7 +8,7 @@ export default function TermsPage() {
   const { data, loading, error } = useTerms();
 
   useEffect(() => {
-    if (data) document.title = `${data.title} — MarketBR`;
+    if (data) document.title = `${data.title} — Nexora`;
   }, [data]);
 
   // Formatação de data feita NO COMPONENTE (não no conteúdo) — respeita

@@ -2,7 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap');
 
 @layer base {
   :root {
@@ -15,11 +15,15 @@
     --popover: 0 0% 100%;
     --popover-foreground: 220 20% 15%;
 
-    --primary: 220 70% 50%;
+    --primary: 217 69% 14%;
     --primary-foreground: 0 0% 100%;
 
     --secondary: 220 15% 94%;
     --secondary-foreground: 220 20% 25%;
+
+    /* Nexora brand */
+    --secondary-brand: 217 91% 60%;
+    --secondary-brand-foreground: 0 0% 100%;
 
     --muted: 220 15% 92%;
     --muted-foreground: 220 10% 45%;
@@ -79,11 +83,14 @@
     --popover: 220 25% 14%;
     --popover-foreground: 220 15% 95%;
 
-    --primary: 220 70% 55%;
+    --primary: 217 91% 60%;
     --primary-foreground: 0 0% 100%;
 
     --secondary: 220 20% 20%;
     --secondary-foreground: 220 15% 90%;
+
+    --secondary-brand: 217 91% 65%;
+    --secondary-brand-foreground: 0 0% 100%;
 
     --muted: 220 20% 18%;
     --muted-foreground: 220 15% 60%;
@@ -122,7 +129,7 @@
 
   body {
     @apply bg-background text-foreground font-sans antialiased;
-    font-family: 'Inter', system-ui, sans-serif;
+    font-family: 'Poppins', system-ui, sans-serif;
   }
 }
 
