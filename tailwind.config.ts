@@ -18,7 +18,7 @@ export default {
     },
     extend: {
       fontFamily: {
-        sans: ['Inter', 'system-ui', 'sans-serif'],
+        sans: ['Poppins', 'system-ui', 'sans-serif'],
       },
       colors: {
         border: "hsl(var(--border))",
@@ -33,6 +33,10 @@ export default {
         secondary: {
           DEFAULT: "hsl(var(--secondary))",
           foreground: "hsl(var(--secondary-foreground))",
+        },
+        brand: {
+          DEFAULT: "hsl(var(--secondary-brand))",
+          foreground: "hsl(var(--secondary-brand-foreground))",
         },
         destructive: {
           DEFAULT: "hsl(var(--destructive))",
