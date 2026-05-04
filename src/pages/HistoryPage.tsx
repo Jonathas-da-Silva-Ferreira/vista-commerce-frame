@@ -8,7 +8,7 @@ export default function HistoryPage() {
   const { data, loading, error } = useHistory();
 
   useEffect(() => {
-    if (data) document.title = `${data.title} — MarketBR`;
+    if (data) document.title = `${data.title} — Nexora`;
   }, [data]);
 
   return (

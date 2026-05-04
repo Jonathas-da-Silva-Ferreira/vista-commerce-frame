@@ -12,7 +12,7 @@ import type { AboutContent, HistoryContent, TermsContent } from '@/types';
 // Estrutura "seções" ao invés de campos fixos (mission, vision, values) para
 // permitir que o time de marketing adicione/remova blocos sem mudar o front.
 export const aboutContent: AboutContent = {
-  companyName: 'MarketBR',
+  companyName: 'Nexora',
   tagline: 'O marketplace que conecta vendedores e compradores em todo o Brasil.',
   description:
     'Somos uma plataforma de comércio eletrônico criada para democratizar o acesso ao mercado digital, oferecendo ferramentas profissionais para pequenos e grandes vendedores e uma experiência de compra segura e moderna para milhões de brasileiros.',
@@ -20,7 +20,7 @@ export const aboutContent: AboutContent = {
     {
       id: 'quem-somos',
       title: 'Quem Somos',
-      body: 'A MarketBR nasceu em 2024 com o propósito de simplificar o e-commerce no Brasil. Reunimos tecnologia, logística inteligente e curadoria de vendedores para entregar uma experiência de compra confiável, rápida e justa para todos os envolvidos.',
+      body: 'A Nexora nasceu em 2024 com o propósito de simplificar o e-commerce no Brasil. Reunimos tecnologia, logística inteligente e curadoria de vendedores para entregar uma experiência de compra confiável, rápida e justa para todos os envolvidos.',
     },
     {
       id: 'missao',
@@ -45,7 +45,7 @@ export const aboutContent: AboutContent = {
 // permitir renderização simples como timeline vertical.
 export const historyContent: HistoryContent = {
   title: 'Nossa História',
-  intro: 'Da ideia inicial ao marketplace nacional — conheça os principais marcos que construíram a MarketBR.',
+  intro: 'Da ideia inicial ao marketplace nacional — conheça os principais marcos que construíram a Nexora.',
   milestones: [
     {
       year: '2024',
@@ -57,7 +57,7 @@ export const historyContent: HistoryContent = {
       year: '2025',
       title: 'Lançamento da plataforma',
       description:
-        'Subimos a primeira versão pública da MarketBR com mais de 500 vendedores parceiros e cobertura logística para todas as capitais do país.',
+        'Subimos a primeira versão pública da Nexora com mais de 500 vendedores parceiros e cobertura logística para todas as capitais do país.',
     },
     {
       year: '2026',
@@ -81,12 +81,12 @@ export const termsContent: TermsContent = {
   title: 'Termos de Uso',
   lastUpdated: '2026-01-15',
   intro:
-    'Ao utilizar a MarketBR, você concorda com os termos descritos abaixo. Recomendamos a leitura atenta antes de cadastrar-se ou realizar qualquer compra na plataforma.',
+    'Ao utilizar a Nexora, você concorda com os termos descritos abaixo. Recomendamos a leitura atenta antes de cadastrar-se ou realizar qualquer compra na plataforma.',
   sections: [
     {
       id: 'uso-da-plataforma',
       title: '1. Uso da Plataforma',
-      body: 'A MarketBR concede ao usuário uma licença pessoal, não exclusiva e intransferível para utilizar o site e seus serviços para fins lícitos. É proibido qualquer uso que viole leis vigentes, direitos de terceiros ou as boas práticas comerciais.',
+      body: 'A Nexora concede ao usuário uma licença pessoal, não exclusiva e intransferível para utilizar o site e seus serviços para fins lícitos. É proibido qualquer uso que viole leis vigentes, direitos de terceiros ou as boas práticas comerciais.',
     },
     {
       id: 'responsabilidade-do-usuario',
@@ -96,7 +96,7 @@ export const termsContent: TermsContent = {
     {
       id: 'politica-de-vendas',
       title: '3. Política de Vendas',
-      body: 'Vendedores devem oferecer produtos lícitos, descrever fielmente as características, manter o estoque atualizado e cumprir os prazos estabelecidos. A MarketBR pode suspender anúncios que violem estas regras ou recebam reclamações reiteradas.',
+      body: 'Vendedores devem oferecer produtos lícitos, descrever fielmente as características, manter o estoque atualizado e cumprir os prazos estabelecidos. A Nexora pode suspender anúncios que violem estas regras ou recebam reclamações reiteradas.',
     },
     {
       id: 'politica-de-entrega',
@@ -116,7 +116,7 @@ export const termsContent: TermsContent = {
     {
       id: 'alteracoes',
       title: '7. Alterações dos Termos',
-      body: 'A MarketBR pode atualizar estes termos a qualquer momento. Mudanças relevantes serão comunicadas por e-mail ou banner na plataforma com pelo menos 15 dias de antecedência.',
+      body: 'A Nexora pode atualizar estes termos a qualquer momento. Mudanças relevantes serão comunicadas por e-mail ou banner na plataforma com pelo menos 15 dias de antecedência.',
     },
   ],
 };

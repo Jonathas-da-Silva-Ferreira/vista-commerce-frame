@@ -13,6 +13,7 @@ import {
   X
 } from 'lucide-react';
 import { useTheme } from '@/contexts/ThemeContext';
+import Logo from '@/components/Logo';
 import { useCart } from '@/contexts/CartContext';
 import { useFavorites } from '@/contexts/FavoritesContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -57,11 +58,12 @@ export default function Header() {
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16 md:h-20">
           {/* Logo */}
-          <Link to="/" className="flex items-center gap-2">
-            <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
-              <ShoppingCart className="w-5 h-5 text-primary-foreground" />
+          <Link to="/" className="flex items-center gap-2.5">
+            <Logo size={40} />
+            <div className="hidden sm:flex flex-col leading-tight">
+              <span className="font-bold text-xl tracking-tight">Nexora</span>
+              <span className="text-[10px] text-muted-foreground -mt-0.5">O futuro das compras online</span>
             </div>
-            <span className="font-bold text-xl hidden sm:block">MarketBR</span>
           </Link>
 
           {/* Location */}

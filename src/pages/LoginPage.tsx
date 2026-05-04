@@ -56,9 +56,9 @@ export default function LoginPage() {
           {/* Main Card */}
           <div className="bg-card rounded-2xl p-6 md:p-8 shadow-card border border-border/50">
             <div className="text-center mb-6">
-              <h1 className="text-2xl font-bold">Bem-vindo ao MarketBR</h1>
+              <h1 className="text-2xl font-bold">Bem-vindo à Nexora</h1>
               <p className="text-muted-foreground mt-1">
-                Faça login ou crie sua conta
+                O futuro das compras online — entre ou crie sua conta
               </p>
             </div>
 

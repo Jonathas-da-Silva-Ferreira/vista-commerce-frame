@@ -69,7 +69,7 @@ export default function SellProductPage() {
             </div>
             <h1 className="text-2xl font-bold">Acesso restrito</h1>
             <p className="text-muted-foreground">
-              Você precisa estar logado para vender produtos no MarketBR.
+              Você precisa estar logado para vender produtos no Nexora.
             </p>
             <Button size="lg" onClick={() => navigate('/login')} className="gap-2">
               <LogIn className="w-4 h-4" />
