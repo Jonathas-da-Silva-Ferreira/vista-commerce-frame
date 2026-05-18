@@ -1,16 +1,20 @@
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import Logo from '@/components/Logo';
 
-// Links centralizados em constante para que adição/remoção seja trivial
-// e o JSX permaneça declarativo. As rotas batem 1:1 com as definidas em App.tsx.
-const footerLinks = [
-  { label: 'História', to: '/historia' },
-  { label: 'Sobre Nós', to: '/sobre' },
-  { label: 'Contato', to: '/contato' },
-  { label: 'Termos', to: '/termos' },
-];
-
+// Link list is built inside the component so labels react to language changes.
+// Routes themselves stay in Portuguese — they're part of the URL contract
+// and are not localized to avoid breaking existing inbound links/SEO.
 export default function Footer() {
+  const { t } = useTranslation();
+
+  const footerLinks = [
+    { label: t('footer.history'), to: '/historia' },
+    { label: t('footer.about'), to: '/sobre' },
+    { label: t('footer.contact'), to: '/contato' },
+    { label: t('footer.terms'), to: '/termos' },
+  ];
+
   return (
     <footer className="bg-muted mt-auto">
       <div className="container mx-auto px-4 py-10">
@@ -18,7 +22,7 @@ export default function Footer() {
           <Logo size={44} />
           <div className="text-center">
             <p className="font-bold text-lg tracking-tight">Nexora</p>
-            <p className="text-sm text-muted-foreground">O futuro das compras online</p>
+            <p className="text-sm text-muted-foreground">{t('footer.tagline')}</p>
           </div>
         </div>
         <div className="flex flex-wrap justify-center gap-8 md:gap-16">
@@ -33,7 +37,7 @@ export default function Footer() {
           ))}
         </div>
         <div className="mt-6 pt-6 border-t border-border text-center text-sm text-muted-foreground">
-          <p>© {new Date().getFullYear()} Nexora. Todos os direitos reservados.</p>
+          <p>© {new Date().getFullYear()} Nexora. {t('footer.rights')}</p>
         </div>
       </div>
     </footer>

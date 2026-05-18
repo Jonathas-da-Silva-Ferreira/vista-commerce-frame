@@ -1,19 +1,21 @@
 import { Link } from 'react-router-dom';
 import { useState } from 'react';
-import { 
-  User, 
-  DollarSign, 
-  Mail, 
-  Heart, 
-  ShoppingCart, 
-  MapPin, 
-  Moon, 
+import { useTranslation } from 'react-i18next';
+import {
+  User,
+  DollarSign,
+  Mail,
+  Heart,
+  ShoppingCart,
+  MapPin,
+  Moon,
   Sun,
   Menu,
   X
 } from 'lucide-react';
 import { useTheme } from '@/contexts/ThemeContext';
 import Logo from '@/components/Logo';
+import LanguageSwitcher from '@/components/LanguageSwitcher';
 import { useCart } from '@/contexts/CartContext';
 import { useFavorites } from '@/contexts/FavoritesContext';
 import { useAuth } from '@/contexts/AuthContext';
