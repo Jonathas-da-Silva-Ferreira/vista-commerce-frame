@@ -1,0 +1,108 @@
+{
+  "common": {
+    "loading": "Loading...",
+    "error": "Something went wrong. Please try again.",
+    "retry": "Try again",
+    "search": "Search",
+    "searchPlaceholder": "Search products...",
+    "viewMore": "View more",
+    "save": "Save",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "remove": "Remove",
+    "edit": "Edit",
+    "back": "Back",
+    "next": "Next",
+    "previous": "Previous",
+    "yes": "Yes",
+    "no": "No",
+    "empty": "Nothing here yet."
+  },
+  "language": {
+    "label": "Language",
+    "pt-BR": "Português",
+    "en-US": "English"
+  },
+  "header": {
+    "tagline": "The future of online shopping",
+    "login": "Sign in",
+    "loginRegister": "Sign in / Register",
+    "logout": "Sign out",
+    "sell": "Sell",
+    "contact": "Contact",
+    "favorites": "Favorites",
+    "cart": "Cart",
+    "darkMode": "Dark mode",
+    "lightMode": "Light mode",
+    "toggleTheme": "Toggle theme",
+    "menu": "Menu"
+  },
+  "footer": {
+    "tagline": "The future of online shopping",
+    "history": "History",
+    "about": "About Us",
+    "contact": "Contact",
+    "terms": "Terms",
+    "rights": "All rights reserved."
+  },
+  "home": {
+    "categoriesTitle": "Categories"
+  },
+  "cart": {
+    "title": "Shopping Cart",
+    "empty": "Your cart is empty",
+    "emptyDesc": "Add products to your cart to continue shopping",
+    "explore": "Explore products",
+    "clear": "Clear cart",
+    "items_one": "{{count}} item",
+    "items_other": "{{count}} items",
+    "sellers_one": "from {{count}} seller",
+    "sellers_other": "from {{count}} sellers",
+    "calculateShipping": "Enter your ZIP code to calculate shipping",
+    "calculate": "Calculate",
+    "change": "Change",
+    "checkout": "Checkout",
+    "subtotal": "Subtotal",
+    "shipping": "Shipping",
+    "total": "Total",
+    "cepRequired": "Enter your ZIP code before checkout.",
+    "checkoutSuccess": "Order placed successfully! Inventory updated.",
+    "checkoutError": "Could not complete checkout. Please try again."
+  },
+  "login": {
+    "title": "Welcome to Nexora",
+    "subtitle": "Sign in to your account or create a new one",
+    "email": "Email",
+    "password": "Password",
+    "name": "Name",
+    "signIn": "Sign in",
+    "signUp": "Sign up",
+    "createAccount": "Create account",
+    "alreadyHaveAccount": "I already have an account"
+  },
+  "favorites": {
+    "title": "My Favorites",
+    "empty": "You don't have any favorites yet",
+    "emptyDesc": "Save products to view them later."
+  },
+  "product": {
+    "addToCart": "Add to cart",
+    "buyNow": "Buy now",
+    "inStock": "In stock",
+    "outOfStock": "Out of stock",
+    "reviews": "Customer reviews"
+  },
+  "contact": {
+    "title": "Contact Us",
+    "name": "Name",
+    "email": "Email",
+    "subject": "Subject",
+    "message": "Message",
+    "send": "Send message"
+  },
+  "notFound": {
+    "title": "Page not found",
+    "desc": "The page you requested does not exist.",
+    "home": "Go back home"
+  }
+}

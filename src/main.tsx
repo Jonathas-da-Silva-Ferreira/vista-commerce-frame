@@ -1,6 +1,9 @@
 import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
+// Side-effect import: initializes i18next before any component renders so
+// useTranslation() never sees an uninitialized instance.
+import "./i18n";
 
 async function boot() {
   // When no backend URL is configured, install simulated REST endpoints
