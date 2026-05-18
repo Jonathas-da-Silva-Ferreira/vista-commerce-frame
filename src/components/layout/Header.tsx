@@ -1,19 +1,21 @@
 import { Link } from 'react-router-dom';
 import { useState } from 'react';
-import { 
-  User, 
-  DollarSign, 
-  Mail, 
-  Heart, 
-  ShoppingCart, 
-  MapPin, 
-  Moon, 
+import { useTranslation } from 'react-i18next';
+import {
+  User,
+  DollarSign,
+  Mail,
+  Heart,
+  ShoppingCart,
+  MapPin,
+  Moon,
   Sun,
   Menu,
   X
 } from 'lucide-react';
 import { useTheme } from '@/contexts/ThemeContext';
 import Logo from '@/components/Logo';
+import LanguageSwitcher from '@/components/LanguageSwitcher';
 import { useCart } from '@/contexts/CartContext';
 import { useFavorites } from '@/contexts/FavoritesContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -47,6 +49,7 @@ function HeaderLink({ to, icon, label, badge }: HeaderLinkProps) {
 }
 
 export default function Header() {
+  const { t } = useTranslation();
   const { theme, toggleTheme } = useTheme();
   const { itemCount } = useCart();
   const { favorites } = useFavorites();
@@ -62,7 +65,7 @@ export default function Header() {
             <Logo size={40} />
             <div className="hidden sm:flex flex-col leading-tight">
               <span className="font-bold text-xl tracking-tight">Nexora</span>
-              <span className="text-[10px] text-muted-foreground -mt-0.5">O futuro das compras online</span>
+              <span className="text-[10px] text-muted-foreground -mt-0.5">{t('header.tagline')}</span>
             </div>
           </Link>
 
@@ -77,32 +80,36 @@ export default function Header() {
               <div className="flex flex-col items-center gap-1 text-foreground/80">
                 <User className="w-6 h-6" />
                 <span className="text-xs font-medium">{user?.name?.split(' ')[0]}</span>
-                <button onClick={logout} className="text-[10px] text-muted-foreground hover:text-foreground">Sair</button>
+                <button onClick={logout} className="text-[10px] text-muted-foreground hover:text-foreground">{t('header.logout')}</button>
               </div>
             ) : (
-              <HeaderLink to="/login" icon={<User className="w-6 h-6" />} label="Entrar" />
+              <HeaderLink to="/login" icon={<User className="w-6 h-6" />} label={t('header.login')} />
             )}
-            <HeaderLink to="/vender" icon={<DollarSign className="w-6 h-6" />} label="Vender" />
-            <HeaderLink to="/contato" icon={<Mail className="w-6 h-6" />} label="Contato" />
-            <HeaderLink to="/favoritos" icon={<Heart className="w-6 h-6" />} label="Favoritos" badge={favorites.length} />
-            <HeaderLink to="/carrinho" icon={<ShoppingCart className="w-6 h-6" />} label="Carrinho" badge={itemCount} />
-            
+            <HeaderLink to="/vender" icon={<DollarSign className="w-6 h-6" />} label={t('header.sell')} />
+            <HeaderLink to="/contato" icon={<Mail className="w-6 h-6" />} label={t('header.contact')} />
+            <HeaderLink to="/favoritos" icon={<Heart className="w-6 h-6" />} label={t('header.favorites')} badge={favorites.length} />
+            <HeaderLink to="/carrinho" icon={<ShoppingCart className="w-6 h-6" />} label={t('header.cart')} badge={itemCount} />
+
             <button
               onClick={toggleTheme}
               className="flex flex-col items-center gap-1 text-foreground/80 hover:text-foreground transition-colors"
-              aria-label="Alternar tema"
+              aria-label={t('header.toggleTheme')}
             >
               {theme === 'light' ? (
                 <Moon className="w-6 h-6" />
               ) : (
                 <Sun className="w-6 h-6" />
               )}
-              <span className="text-xs font-medium">{theme === 'light' ? 'Modo Escuro' : 'Modo Claro'}</span>
+              <span className="text-xs font-medium">{theme === 'light' ? t('header.darkMode') : t('header.lightMode')}</span>
             </button>
+
+            {/* Language switcher sits last so it doesn't compete with primary nav. */}
+            <LanguageSwitcher />
           </nav>
 
           {/* Mobile Menu Button */}
           <div className="flex lg:hidden items-center gap-4">
+            <LanguageSwitcher />
             <Link to="/favoritos" className="relative">
               <Heart className="w-6 h-6" />
               {favorites.length > 0 && (
@@ -123,7 +130,7 @@ export default function Header() {
               variant="ghost"
               size="icon"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              aria-label="Menu"
+              aria-label={t('header.menu')}
             >
               {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
             </Button>
@@ -140,21 +147,21 @@ export default function Header() {
                     <User className="w-5 h-5" />
                     <span>{user?.name}</span>
                   </div>
-                  <button onClick={() => { logout(); setMobileMenuOpen(false); }} className="text-sm text-muted-foreground hover:text-foreground">Sair</button>
+                  <button onClick={() => { logout(); setMobileMenuOpen(false); }} className="text-sm text-muted-foreground hover:text-foreground">{t('header.logout')}</button>
                 </div>
               ) : (
                 <Link to="/login" className="flex items-center gap-3 p-2 hover:bg-muted rounded-lg" onClick={() => setMobileMenuOpen(false)}>
                   <User className="w-5 h-5" />
-                  <span>Entrar / Cadastrar</span>
+                  <span>{t('header.loginRegister')}</span>
                 </Link>
               )}
               <Link to="/vender" className="flex items-center gap-3 p-2 hover:bg-muted rounded-lg" onClick={() => setMobileMenuOpen(false)}>
                 <DollarSign className="w-5 h-5" />
-                <span>Vender</span>
+                <span>{t('header.sell')}</span>
               </Link>
               <Link to="/contato" className="flex items-center gap-3 p-2 hover:bg-muted rounded-lg" onClick={() => setMobileMenuOpen(false)}>
                 <Mail className="w-5 h-5" />
-                <span>Contato</span>
+                <span>{t('header.contact')}</span>
               </Link>
               <div className="flex items-center gap-3 p-2">
                 <LocationSelector />
@@ -167,7 +174,7 @@ export default function Header() {
                 className="flex items-center gap-3 p-2 hover:bg-muted rounded-lg w-full text-left"
               >
                 {theme === 'light' ? <Moon className="w-5 h-5" /> : <Sun className="w-5 h-5" />}
-                <span>{theme === 'light' ? 'Modo Escuro' : 'Modo Claro'}</span>
+                <span>{theme === 'light' ? t('header.darkMode') : t('header.lightMode')}</span>
               </button>
             </div>
           </nav>

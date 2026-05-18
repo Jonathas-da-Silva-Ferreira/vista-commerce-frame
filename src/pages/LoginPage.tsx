@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, Mail, Lock, User, UserX, ShoppingBag, Heart, Clock } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import MainLayout from '@/components/layout/MainLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -13,6 +14,9 @@ import { useAuth } from '@/contexts/AuthContext';
 export default function LoginPage() {
   const navigate = useNavigate();
   const { login, register: authRegister } = useAuth();
+  // Centralized translator avoids string concatenation in JSX and keeps
+  // copy decoupled from layout.
+  const { t } = useTranslation();
   const [showPassword, setShowPassword] = useState(false);
   const [loginData, setLoginData] = useState({ email: '', password: '' });
   const [registerData, setRegisterData] = useState({
@@ -56,23 +60,21 @@ export default function LoginPage() {
           {/* Main Card */}
           <div className="bg-card rounded-2xl p-6 md:p-8 shadow-card border border-border/50">
             <div className="text-center mb-6">
-              <h1 className="text-2xl font-bold">Bem-vindo à Nexora</h1>
-              <p className="text-muted-foreground mt-1">
-                O futuro das compras online — entre ou crie sua conta
-              </p>
+              <h1 className="text-2xl font-bold">{t('login.title')}</h1>
+              <p className="text-muted-foreground mt-1">{t('login.subtitle')}</p>
             </div>
 
             <Tabs defaultValue="login" className="w-full">
               <TabsList className="grid w-full grid-cols-2 mb-6">
-                <TabsTrigger value="login">Entrar</TabsTrigger>
-                <TabsTrigger value="register">Cadastrar</TabsTrigger>
+                <TabsTrigger value="login">{t('login.signIn')}</TabsTrigger>
+                <TabsTrigger value="register">{t('login.signUp')}</TabsTrigger>
               </TabsList>
 
               {/* Login Form */}
               <TabsContent value="login">
                 <form onSubmit={handleLogin} className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="login-email">E-mail</Label>
+                    <Label htmlFor="login-email">{t('login.email')}</Label>
                     <div className="relative">
                       <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                       <Input
@@ -88,7 +90,7 @@ export default function LoginPage() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="login-password">Senha</Label>
+                    <Label htmlFor="login-password">{t('login.password')}</Label>
                     <div className="relative">
                       <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                       <Input
@@ -117,7 +119,7 @@ export default function LoginPage() {
                   </div>
 
                   <Button type="submit" className="w-full" size="lg">
-                    Entrar
+                    {t('login.signIn')}
                   </Button>
                 </form>
               </TabsContent>
@@ -126,7 +128,7 @@ export default function LoginPage() {
               <TabsContent value="register">
                 <form onSubmit={handleRegister} className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="register-name">Nome completo</Label>
+                    <Label htmlFor="register-name">{t('login.name')}</Label>
                     <div className="relative">
                       <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                       <Input
@@ -142,7 +144,7 @@ export default function LoginPage() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="register-email">E-mail</Label>
+                    <Label htmlFor="register-email">{t('login.email')}</Label>
                     <div className="relative">
                       <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                       <Input
@@ -158,7 +160,7 @@ export default function LoginPage() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="register-password">Senha</Label>
+                    <Label htmlFor="register-password">{t('login.password')}</Label>
                     <div className="relative">
                       <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                       <Input
@@ -199,7 +201,7 @@ export default function LoginPage() {
                   </div>
 
                   <Button type="submit" className="w-full" size="lg">
-                    Criar Conta
+                    {t('login.createAccount')}
                   </Button>
                 </form>
               </TabsContent>

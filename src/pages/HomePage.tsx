@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import MainLayout from '@/components/layout/MainLayout';
 import SearchBar from '@/components/SearchBar';
 import Banner from '@/components/Banner';
@@ -19,6 +20,9 @@ import { useCategories, useBanners } from '@/hooks/useApi';
  * duplicação de componentes de listagem.
  */
 export default function HomePage() {
+  // useTranslation gives us reactive labels — changing locale re-renders
+  // the page without manual subscriptions.
+  const { t } = useTranslation();
   // Apenas dados estritamente necessários para a home: categorias + banners.
   // Hooks de produtos foram removidos intencionalmente para não disparar
   // chamadas desnecessárias à API na landing.
@@ -40,7 +44,7 @@ export default function HomePage() {
 
         {/* Grid de categorias é o eixo central de navegação */}
         <section>
-          <h2 className="text-2xl font-bold mb-4">Categorias</h2>
+          <h2 className="text-2xl font-bold mb-4">{t('home.categoriesTitle')}</h2>
           <CategoryGrid categories={categories} />
         </section>
       </div>

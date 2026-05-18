@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Trash2, Minus, Plus, ShoppingBag, ArrowRight, Truck, Zap, DollarSign, Award, MapPin, Loader2, Package, Clock, AlertCircle } from 'lucide-react';
 import MainLayout from '@/components/layout/MainLayout';
 import { Button } from '@/components/ui/button';
@@ -85,6 +86,8 @@ function CartCepInput() {
 export default function CartPage() {
   const { items, total, updateQuantity, removeItem, clearCart } = useCart();
   const { location } = useLocation();
+  // Translator is read once per render — i18next caches lookups internally.
+  const { t } = useTranslation();
   // Estado de frete por vendedor — cada vendedor tem suas opções de transportadora
   const [sellerShipping, setSellerShipping] = useState<SellerShippingResult[]>([]);
   // Mapa de transportadora selecionada por vendedor (sellerId → carrierId)
@@ -175,7 +178,7 @@ export default function CartPage() {
 
   const handleCheckout = async () => {
     if (!location) {
-      toast.error('Informe seu CEP antes de finalizar a compra.');
+      toast.error(t('cart.cepRequired'));
       return;
     }
     try {
@@ -189,9 +192,9 @@ export default function CartPage() {
         )
       );
       clearCart();
-      toast.success('Compra finalizada com sucesso! Estoque atualizado.');
+      toast.success(t('cart.checkoutSuccess'));
     } catch {
-      toast.error('Erro ao finalizar compra. Tente novamente.');
+      toast.error(t('cart.checkoutError'));
     }
   };
 
@@ -200,10 +203,10 @@ export default function CartPage() {
       <MainLayout>
         <div className="container mx-auto px-4 py-16 text-center">
           <ShoppingBag className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
-          <h1 className="text-2xl font-bold mb-2">Seu carrinho está vazio</h1>
-          <p className="text-muted-foreground mb-6">Adicione produtos ao carrinho para continuar comprando</p>
+          <h1 className="text-2xl font-bold mb-2">{t('cart.empty')}</h1>
+          <p className="text-muted-foreground mb-6">{t('cart.emptyDesc')}</p>
           <Link to="/produtos">
-            <Button size="lg">Explorar Produtos <ArrowRight className="w-5 h-5 ml-2" /></Button>
+            <Button size="lg">{t('cart.explore')} <ArrowRight className="w-5 h-5 ml-2" /></Button>
           </Link>
         </div>
       </MainLayout>
@@ -215,12 +218,12 @@ export default function CartPage() {
       <div className="container mx-auto px-4 py-6">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-2xl font-bold">Carrinho de Compras</h1>
+            <h1 className="text-2xl font-bold">{t('cart.title')}</h1>
             <p className="text-sm text-muted-foreground mt-1">
-              {items.length} {items.length === 1 ? 'item' : 'itens'} de {Object.keys(sellerGroups).length} {Object.keys(sellerGroups).length === 1 ? 'vendedor' : 'vendedores'}
+              {t('cart.items', { count: items.length })} {t('cart.sellers', { count: Object.keys(sellerGroups).length })}
             </p>
           </div>
-          <Button variant="ghost" size="sm" onClick={clearCart} className="text-destructive">Limpar Carrinho</Button>
+          <Button variant="ghost" size="sm" onClick={clearCart} className="text-destructive">{t('cart.clear')}</Button>
         </div>
 
         <div className="grid lg:grid-cols-3 gap-8">

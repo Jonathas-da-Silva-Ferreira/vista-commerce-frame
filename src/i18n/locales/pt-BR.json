@@ -1,0 +1,108 @@
+{
+  "common": {
+    "loading": "Carregando...",
+    "error": "Ocorreu um erro. Tente novamente.",
+    "retry": "Tentar novamente",
+    "search": "Buscar",
+    "searchPlaceholder": "Buscar Produto...",
+    "viewMore": "Ver mais",
+    "save": "Salvar",
+    "cancel": "Cancelar",
+    "confirm": "Confirmar",
+    "remove": "Remover",
+    "edit": "Editar",
+    "back": "Voltar",
+    "next": "Próximo",
+    "previous": "Anterior",
+    "yes": "Sim",
+    "no": "Não",
+    "empty": "Nada por aqui ainda."
+  },
+  "language": {
+    "label": "Idioma",
+    "pt-BR": "Português",
+    "en-US": "English"
+  },
+  "header": {
+    "tagline": "O futuro das compras online",
+    "login": "Entrar",
+    "loginRegister": "Entrar / Cadastrar",
+    "logout": "Sair",
+    "sell": "Vender",
+    "contact": "Contato",
+    "favorites": "Favoritos",
+    "cart": "Carrinho",
+    "darkMode": "Modo Escuro",
+    "lightMode": "Modo Claro",
+    "toggleTheme": "Alternar tema",
+    "menu": "Menu"
+  },
+  "footer": {
+    "tagline": "O futuro das compras online",
+    "history": "História",
+    "about": "Sobre Nós",
+    "contact": "Contato",
+    "terms": "Termos",
+    "rights": "Todos os direitos reservados."
+  },
+  "home": {
+    "categoriesTitle": "Categorias"
+  },
+  "cart": {
+    "title": "Carrinho de Compras",
+    "empty": "Seu carrinho está vazio",
+    "emptyDesc": "Adicione produtos ao carrinho para continuar comprando",
+    "explore": "Explorar Produtos",
+    "clear": "Limpar Carrinho",
+    "items_one": "{{count}} item",
+    "items_other": "{{count}} itens",
+    "sellers_one": "de {{count}} vendedor",
+    "sellers_other": "de {{count}} vendedores",
+    "calculateShipping": "Informe seu CEP para calcular o frete",
+    "calculate": "Calcular",
+    "change": "Alterar",
+    "checkout": "Finalizar Compra",
+    "subtotal": "Subtotal",
+    "shipping": "Frete",
+    "total": "Total",
+    "cepRequired": "Informe seu CEP antes de finalizar a compra.",
+    "checkoutSuccess": "Compra finalizada com sucesso! Estoque atualizado.",
+    "checkoutError": "Erro ao finalizar compra. Tente novamente."
+  },
+  "login": {
+    "title": "Bem-vindo à Nexora",
+    "subtitle": "Entre na sua conta ou cadastre-se",
+    "email": "E-mail",
+    "password": "Senha",
+    "name": "Nome",
+    "signIn": "Entrar",
+    "signUp": "Cadastrar",
+    "createAccount": "Criar conta",
+    "alreadyHaveAccount": "Já tenho conta"
+  },
+  "favorites": {
+    "title": "Meus Favoritos",
+    "empty": "Você ainda não tem favoritos",
+    "emptyDesc": "Salve produtos para ver mais tarde."
+  },
+  "product": {
+    "addToCart": "Adicionar ao carrinho",
+    "buyNow": "Comprar agora",
+    "inStock": "Em estoque",
+    "outOfStock": "Esgotado",
+    "reviews": "Avaliações dos clientes"
+  },
+  "contact": {
+    "title": "Fale Conosco",
+    "name": "Nome",
+    "email": "E-mail",
+    "subject": "Assunto",
+    "message": "Mensagem",
+    "send": "Enviar mensagem"
+  },
+  "notFound": {
+    "title": "Página não encontrada",
+    "desc": "O endereço que você acessou não existe.",
+    "home": "Voltar para a home"
+  }
+}

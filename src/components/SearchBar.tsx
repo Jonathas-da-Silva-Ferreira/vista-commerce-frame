@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Search } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -12,6 +13,7 @@ interface SearchBarProps {
 export default function SearchBar({ initialQuery = '', onSearch }: SearchBarProps) {
   const [query, setQuery] = useState(initialQuery);
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -29,7 +31,7 @@ export default function SearchBar({ initialQuery = '', onSearch }: SearchBarProp
       <div className="relative flex items-center">
         <Input
           type="text"
-          placeholder="Buscar Produto..."
+          placeholder={t('common.searchPlaceholder')}
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           className="pr-12 h-12 text-base bg-card border-2 border-border focus:border-primary rounded-full shadow-soft"
