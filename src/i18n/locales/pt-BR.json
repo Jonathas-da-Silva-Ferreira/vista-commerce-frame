@@ -16,7 +16,12 @@
     "previous": "Anterior",
     "yes": "Sim",
     "no": "Não",
-    "empty": "Nada por aqui ainda."
+    "empty": "Nada por aqui ainda.",
+    "filters": "Filtros",
+    "all": "Todos",
+    "home": "Início",
+    "page": "Página",
+    "of": "de"
   },
   "language": {
     "label": "Idioma",
@@ -90,15 +95,73 @@
     "buyNow": "Comprar agora",
     "inStock": "Em estoque",
     "outOfStock": "Esgotado",
-    "reviews": "Avaliações dos clientes"
+    "reviews": "Avaliações dos clientes",
+    "description": "Descrição",
+    "specifications": "Especificações",
+    "seller": "Vendido por",
+    "freeShipping": "Frete grátis"
+  },
+  "products": {
+    "all": "Todos os Produtos",
+    "resultsFor": "Resultados para \"{{query}}\"",
+    "found_one": "{{count}} produto encontrado",
+    "found_other": "{{count}} produtos encontrados",
+    "catalogDesc": "Explore nosso catálogo completo de produtos.",
+    "noResults": "Nenhum produto encontrado",
+    "filters": "Filtros",
+    "sortBy": "Ordenar por",
+    "clearFilters": "Limpar filtros"
   },
   "contact": {
     "title": "Fale Conosco",
+    "subtitle": "Tem alguma dúvida, sugestão ou precisa de ajuda? Preencha o formulário e entraremos em contato em breve.",
+    "info": "Informações",
     "name": "Nome",
+    "namePlaceholder": "Seu nome",
     "email": "E-mail",
+    "emailPlaceholder": "seu@email.com",
+    "phone": "Telefone",
+    "phonePlaceholder": "(00) 00000-0000",
     "subject": "Assunto",
+    "subjectPlaceholder": "Assunto da mensagem",
     "message": "Mensagem",
-    "send": "Enviar mensagem"
+    "messagePlaceholder": "Escreva sua mensagem aqui...",
+    "send": "Enviar mensagem",
+    "sending": "Enviando...",
+    "sendAnother": "Enviar outra mensagem",
+    "successTitle": "Mensagem enviada!",
+    "successDesc": "Sua mensagem foi enviada com sucesso. Entraremos em contato em breve.",
+    "errorTitle": "Erro",
+    "errorDesc": "Não foi possível enviar sua mensagem. Tente novamente.",
+    "address": "Endereço",
+    "validation": {
+      "nameRequired": "Nome é obrigatório",
+      "emailRequired": "E-mail é obrigatório",
+      "emailInvalid": "E-mail inválido",
+      "subjectRequired": "Assunto é obrigatório",
+      "messageRequired": "Mensagem é obrigatória"
+    }
+  },
+  "shipping": {
+    "calculate": "Calcular frete",
+    "cep": "CEP",
+    "free": "Grátis"
+  },
+  "checkout": {
+    "title": "Finalizar Compra",
+    "payment": "Pagamento",
+    "address": "Endereço de entrega",
+    "summary": "Resumo do pedido",
+    "confirm": "Confirmar pedido"
+  },
+  "seller": {
+    "dashboard": "Painel do Vendedor",
+    "myProducts": "Meus Produtos",
+    "newProduct": "Novo Produto",
+    "orders": "Pedidos",
+    "revenue": "Receita",
+    "sales": "Vendas",
+    "stock": "Estoque"
   },
   "notFound": {
     "title": "Página não encontrada",

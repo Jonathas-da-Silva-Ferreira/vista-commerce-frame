@@ -16,7 +16,12 @@
     "previous": "Previous",
     "yes": "Yes",
     "no": "No",
-    "empty": "Nothing here yet."
+    "empty": "Nothing here yet.",
+    "filters": "Filters",
+    "all": "All",
+    "home": "Home",
+    "page": "Page",
+    "of": "of"
   },
   "language": {
     "label": "Language",
@@ -25,15 +30,15 @@
   },
   "header": {
     "tagline": "The future of online shopping",
-    "login": "Sign in",
-    "loginRegister": "Sign in / Register",
+    "login": "Login",
+    "loginRegister": "Login / Register",
     "logout": "Sign out",
     "sell": "Sell",
     "contact": "Contact",
     "favorites": "Favorites",
     "cart": "Cart",
-    "darkMode": "Dark mode",
-    "lightMode": "Light mode",
+    "darkMode": "Dark Mode",
+    "lightMode": "Light Mode",
     "toggleTheme": "Toggle theme",
     "menu": "Menu"
   },
@@ -90,15 +95,73 @@
     "buyNow": "Buy now",
     "inStock": "In stock",
     "outOfStock": "Out of stock",
-    "reviews": "Customer reviews"
+    "reviews": "Customer reviews",
+    "description": "Description",
+    "specifications": "Specifications",
+    "seller": "Sold by",
+    "freeShipping": "Free shipping"
+  },
+  "products": {
+    "all": "All Products",
+    "resultsFor": "Results for \"{{query}}\"",
+    "found_one": "{{count}} product found",
+    "found_other": "{{count}} products found",
+    "catalogDesc": "Browse our full product catalog.",
+    "noResults": "No products found",
+    "filters": "Filters",
+    "sortBy": "Sort by",
+    "clearFilters": "Clear filters"
   },
   "contact": {
     "title": "Contact Us",
+    "subtitle": "Have a question, suggestion or need help? Fill out the form and we'll get back to you shortly.",
+    "info": "Information",
     "name": "Name",
+    "namePlaceholder": "Your name",
     "email": "Email",
+    "emailPlaceholder": "you@email.com",
+    "phone": "Phone",
+    "phonePlaceholder": "(000) 000-0000",
     "subject": "Subject",
+    "subjectPlaceholder": "Message subject",
     "message": "Message",
-    "send": "Send message"
+    "messagePlaceholder": "Write your message here...",
+    "send": "Send message",
+    "sending": "Sending...",
+    "sendAnother": "Send another message",
+    "successTitle": "Message sent!",
+    "successDesc": "Your message was sent successfully. We'll be in touch soon.",
+    "errorTitle": "Error",
+    "errorDesc": "Could not send your message. Please try again.",
+    "address": "Address",
+    "validation": {
+      "nameRequired": "Name is required",
+      "emailRequired": "Email is required",
+      "emailInvalid": "Invalid email",
+      "subjectRequired": "Subject is required",
+      "messageRequired": "Message is required"
+    }
+  },
+  "shipping": {
+    "calculate": "Calculate shipping",
+    "cep": "ZIP code",
+    "free": "Free"
+  },
+  "checkout": {
+    "title": "Checkout",
+    "payment": "Payment",
+    "address": "Shipping address",
+    "summary": "Order summary",
+    "confirm": "Confirm order"
+  },
+  "seller": {
+    "dashboard": "Seller Dashboard",
+    "myProducts": "My Products",
+    "newProduct": "New Product",
+    "orders": "Orders",
+    "revenue": "Revenue",
+    "sales": "Sales",
+    "stock": "Stock"
   },
   "notFound": {
     "title": "Page not found",
