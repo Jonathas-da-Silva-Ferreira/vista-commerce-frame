@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useSearchParams, useParams } from 'react-router-dom';
 import { Filter, X } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import MainLayout from '@/components/layout/MainLayout';
 import SearchBar from '@/components/SearchBar';
 import ProductGrid from '@/components/ProductGrid';
@@ -13,6 +14,9 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 const ITEMS_PER_PAGE = 8;
 
 export default function ProductsPage() {
+  // i18n hook is the single source of truth for any user-visible string here,
+  // ensuring that filter labels, headings and result counts switch languages.
+  const { t } = useTranslation();
   const [searchParams, setSearchParams] = useSearchParams();
   // useParams captura o :slug quando a rota é /categoria/:slug.
   // Mantemos compat com ?categoria=X (CategoryGrid e links antigos)
@@ -66,14 +70,16 @@ export default function ProductsPage() {
     setFilterState({ ...defaultFilterState });
   };
 
-  // Build page title & description
+  // Build page title & description. Category names come from the API and are
+  // already localized server-side, so we keep them as-is; only the fallback
+  // "no category" copy goes through i18n.
   const pageTitle = category?.name
-    || (query ? `Resultados para "${query}"` : 'Todos os Produtos');
+    || (query ? t('products.resultsFor', { query }) : t('products.all'));
   const pageDescription = category?.description
-    || (query ? `${total} resultado${total !== 1 ? 's' : ''} encontrado${total !== 1 ? 's' : ''}` : 'Explore nosso catálogo completo de produtos.');
+    || (query ? t('products.found', { count: total }) : t('products.catalogDesc'));
 
   const breadcrumbs = [
-    { label: 'Início', to: '/' },
+    { label: t('common.home'), to: '/' },
     { label: pageTitle },
   ];
 
@@ -91,11 +97,12 @@ export default function ProductsPage() {
         {/* Results count + mobile filter toggle */}
         <div className="flex items-center justify-between mb-6">
           <p className="text-sm text-muted-foreground">
-            {total} produto{total !== 1 ? 's' : ''} encontrado{total !== 1 ? 's' : ''}
+            {/* i18next handles plural forms (found_one / found_other) per locale */}
+            {t('products.found', { count: total })}
           </p>
           <Button variant="outline" onClick={() => setShowFilters(!showFilters)} className="lg:hidden">
             <Filter className="w-4 h-4 mr-2" />
-            Filtros
+            {t('common.filters')}
           </Button>
         </div>
 
@@ -104,7 +111,7 @@ export default function ProductsPage() {
           {/* Desktop sidebar */}
           <aside className="hidden lg:block w-64 flex-shrink-0">
             <div className="bg-card rounded-xl p-4 shadow-card sticky top-24">
-              <h2 className="font-bold mb-4">Filtros</h2>
+              <h2 className="font-bold mb-4">{t('common.filters')}</h2>
               <FilterSidebar
                 categories={categories}
                 activeCategory={categorySlug}
@@ -121,7 +128,7 @@ export default function ProductsPage() {
               <div className="absolute inset-0 bg-background/80 backdrop-blur-sm" onClick={() => setShowFilters(false)} />
               <div className="absolute right-0 top-0 h-full w-80 max-w-full bg-card p-6 shadow-xl animate-slide-up overflow-y-auto">
                 <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-lg font-bold">Filtros</h2>
+                  <h2 className="text-lg font-bold">{t('common.filters')}</h2>
                   <Button variant="ghost" size="icon" onClick={() => setShowFilters(false)}>
                     <X className="w-5 h-5" />
                   </Button>
@@ -166,7 +173,7 @@ export default function ProductsPage() {
                     <ChevronRight className="w-4 h-4" />
                   </Button>
                 </div>
-                <p className="text-center text-sm text-muted-foreground mt-4">Página {currentPage} de {totalPages}</p>
+                <p className="text-center text-sm text-muted-foreground mt-4">{t('common.page')} {currentPage} {t('common.of')} {totalPages}</p>
               </>
             )}
           </div>
