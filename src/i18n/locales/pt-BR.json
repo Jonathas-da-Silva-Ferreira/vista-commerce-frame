@@ -21,7 +21,8 @@
     "all": "Todos",
     "home": "Início",
     "page": "Página",
-    "of": "de"
+    "of": "de",
+    "until": "até"
   },
   "language": {
     "label": "Idioma",
@@ -52,6 +53,67 @@
   },
   "home": {
     "categoriesTitle": "Categorias"
+  },
+  "categories": {
+    "melhores-produtos": "Melhores Produtos",
+    "promocao": "Promoção",
+    "casa": "Casa",
+    "pecas-automotivas": "Peças Automotivas",
+    "livros": "Livros",
+    "ferramentas": "Ferramentas",
+    "modas": "Moda",
+    "componentes-computador": "Componentes de Computador",
+    "eletronicos": "Eletrônicos",
+    "esportes": "Esportes",
+    "cozinha": "Cozinha",
+    "aventura": "Aventura",
+    "pesca": "Pesca",
+    "pet-shop": "Pet Shop",
+    "brinquedos": "Brinquedos"
+  },
+  "banner": {
+    "viewMore": "Ver mais",
+    "previous": "Banner anterior",
+    "next": "Próximo banner",
+    "goTo": "Ir para banner {{n}}"
+  },
+  "filters": {
+    "categories": "Categorias",
+    "subcategories": "Subcategorias",
+    "allCategories": "Todas as Categorias",
+    "allSubcategories": "Todas",
+    "priceRange": "Faixa de Preço",
+    "rating": "Avaliação",
+    "andAbove": "& acima",
+    "sortBy": "Ordenar por",
+    "clear": "Limpar Filtros",
+    "sort": {
+      "relevance": "Mais Relevantes",
+      "best-sellers": "Mais Vendidos",
+      "price-asc": "Menor Preço",
+      "price-desc": "Maior Preço",
+      "rating": "Melhor Avaliação",
+      "newest": "Mais Recentes"
+    }
+  },
+  "productCard": {
+    "add": "Adicionar",
+    "inCart": "No Carrinho",
+    "addFavorite": "Adicionar aos favoritos",
+    "removeFavorite": "Remover dos favoritos"
+  },
+  "location": {
+    "sendTo": "Enviar para",
+    "enterYour": "Informe seu",
+    "cep": "CEP",
+    "calculateTitle": "Calcular frete e prazo",
+    "region": "Região",
+    "deliveryIn": "Entrega em até",
+    "businessDays": "dias úteis",
+    "sentFrom": "Enviado de",
+    "distance": "Distância",
+    "freeShipping": "Frete Grátis",
+    "shipping": "Frete"
   },
   "cart": {
     "title": "Carrinho de Compras",

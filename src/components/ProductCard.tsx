@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { Heart, Star, ShoppingCart } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import type { Product } from '@/types';
 import { useCart } from '@/contexts/CartContext';
 import { useFavorites } from '@/contexts/FavoritesContext';
@@ -13,6 +14,9 @@ interface ProductCardProps {
 export default function ProductCard({ product }: ProductCardProps) {
   const { addItem, isInCart } = useCart();
   const { toggleFavorite, isFavorite } = useFavorites();
+  // i18n consumed at the card boundary so re-renders happen locally on
+  // language change without forcing the whole grid to re-render.
+  const { t } = useTranslation();
 
   const discount = product.originalPrice
     ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
@@ -54,7 +58,7 @@ export default function ProductCard({ product }: ProductCardProps) {
         <button
           onClick={handleToggleFavorite}
           className="absolute top-2 right-2 w-8 h-8 bg-card/90 rounded-full flex items-center justify-center hover:bg-card transition-colors"
-          aria-label={isFavorite(product.id) ? 'Remover dos favoritos' : 'Adicionar aos favoritos'}
+          aria-label={isFavorite(product.id) ? t('productCard.removeFavorite') : t('productCard.addFavorite')}
         >
           <Heart
             className={`w-4 h-4 ${
@@ -95,7 +99,7 @@ export default function ProductCard({ product }: ProductCardProps) {
           size="sm"
         >
           <ShoppingCart className="w-4 h-4 mr-2" />
-          {isInCart(product.id) ? 'No Carrinho' : 'Adicionar'}
+          {isInCart(product.id) ? t('productCard.inCart') : t('productCard.add')}
         </Button>
       </div>
     </Link>

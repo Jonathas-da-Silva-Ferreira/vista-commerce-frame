@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import type { Banner as BannerType } from '@/types';
 
@@ -27,6 +28,9 @@ interface BannerProps {
 export default function Banner({ banners, loading }: BannerProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isHovered, setIsHovered] = useState(false);
+  // Used only for chrome strings (buttons/aria); banner.title and subtitle
+  // are content fields that come from the CMS/API.
+  const { t } = useTranslation();
 
   const goToNext = useCallback(() => {
     setCurrentIndex((prev) => (prev + 1) % banners.length);
@@ -107,7 +111,7 @@ export default function Banner({ banners, loading }: BannerProps) {
                         size="lg"
                         className="bg-white text-black hover:bg-white/90 active:scale-[0.97] transition-all font-semibold text-sm md:text-base px-6 md:px-8 rounded-lg shadow-md"
                       >
-                        {banner.buttonText || 'Ver mais'}
+                        {banner.buttonText || t('banner.viewMore')}
                       </Button>
                     </Link>
                   </div>
@@ -124,14 +128,14 @@ export default function Banner({ banners, loading }: BannerProps) {
           <button
             onClick={goToPrevious}
             className="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 md:w-12 md:h-12 rounded-full bg-black/30 backdrop-blur-sm flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300 hover:bg-black/50 active:scale-95"
-            aria-label="Banner anterior"
+            aria-label={t('banner.previous')}
           >
             <ChevronLeft className="w-5 h-5 md:w-6 md:h-6" />
           </button>
           <button
             onClick={goToNext}
             className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 md:w-12 md:h-12 rounded-full bg-black/30 backdrop-blur-sm flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300 hover:bg-black/50 active:scale-95"
-            aria-label="Próximo banner"
+            aria-label={t('banner.next')}
           >
             <ChevronRight className="w-5 h-5 md:w-6 md:h-6" />
           </button>
@@ -142,7 +146,7 @@ export default function Banner({ banners, loading }: BannerProps) {
               <button
                 key={index}
                 onClick={() => setCurrentIndex(index)}
-                aria-label={`Ir para banner ${index + 1}`}
+                aria-label={t('banner.goTo', { n: index + 1 })}
                 className={`h-2 rounded-full transition-all duration-300 ${
                   index === currentIndex
                     ? 'bg-white w-8'

@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import type { Product } from '@/types';
 import ProductCard from './ProductCard';
 
@@ -7,6 +8,9 @@ interface ProductGridProps {
 }
 
 export default function ProductGrid({ products, loading }: ProductGridProps) {
+  // Only the empty-state copy needs translation here; product data is
+  // rendered by ProductCard which has its own i18n hookup.
+  const { t } = useTranslation();
   if (loading) {
     return (
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
@@ -28,7 +32,7 @@ export default function ProductGrid({ products, loading }: ProductGridProps) {
   if (products.length === 0) {
     return (
       <div className="text-center py-12">
-        <p className="text-muted-foreground text-lg">Nenhum produto encontrado.</p>
+        <p className="text-muted-foreground text-lg">{t('products.noResults')}</p>
       </div>
     );
   }
