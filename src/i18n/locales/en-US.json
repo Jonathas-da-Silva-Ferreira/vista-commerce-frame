@@ -21,7 +21,8 @@
     "all": "All",
     "home": "Home",
     "page": "Page",
-    "of": "of"
+    "of": "of",
+    "until": "to"
   },
   "language": {
     "label": "Language",
@@ -52,6 +53,67 @@
   },
   "home": {
     "categoriesTitle": "Categories"
+  },
+  "categories": {
+    "melhores-produtos": "Best Products",
+    "promocao": "Deals",
+    "casa": "Home",
+    "pecas-automotivas": "Auto Parts",
+    "livros": "Books",
+    "ferramentas": "Tools",
+    "modas": "Fashion",
+    "componentes-computador": "PC Components",
+    "eletronicos": "Electronics",
+    "esportes": "Sports",
+    "cozinha": "Kitchen",
+    "aventura": "Adventure",
+    "pesca": "Fishing",
+    "pet-shop": "Pet Shop",
+    "brinquedos": "Toys"
+  },
+  "banner": {
+    "viewMore": "View more",
+    "previous": "Previous banner",
+    "next": "Next banner",
+    "goTo": "Go to banner {{n}}"
+  },
+  "filters": {
+    "categories": "Categories",
+    "subcategories": "Subcategories",
+    "allCategories": "All categories",
+    "allSubcategories": "All",
+    "priceRange": "Price range",
+    "rating": "Rating",
+    "andAbove": "& up",
+    "sortBy": "Sort by",
+    "clear": "Clear filters",
+    "sort": {
+      "relevance": "Most relevant",
+      "best-sellers": "Best sellers",
+      "price-asc": "Lowest price",
+      "price-desc": "Highest price",
+      "rating": "Top rated",
+      "newest": "Newest"
+    }
+  },
+  "productCard": {
+    "add": "Add",
+    "inCart": "In cart",
+    "addFavorite": "Add to favorites",
+    "removeFavorite": "Remove from favorites"
+  },
+  "location": {
+    "sendTo": "Ship to",
+    "enterYour": "Enter your",
+    "cep": "ZIP code",
+    "calculateTitle": "Calculate shipping and delivery",
+    "region": "Region",
+    "deliveryIn": "Delivery in up to",
+    "businessDays": "business days",
+    "sentFrom": "Shipped from",
+    "distance": "Distance",
+    "freeShipping": "Free shipping",
+    "shipping": "Shipping"
   },
   "cart": {
     "title": "Shopping Cart",
