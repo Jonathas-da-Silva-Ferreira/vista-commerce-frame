@@ -9,6 +9,7 @@ import CategoryHeader from '@/components/CategoryHeader';
 import FilterSidebar, { defaultFilterState, type FilterState } from '@/components/FilterSidebar';
 import { Button } from '@/components/ui/button';
 import { useProducts, useCategories } from '@/hooks/useApi';
+import { useCategoryLabel } from '@/hooks/useCategoryLabel';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 const ITEMS_PER_PAGE = 8;
@@ -35,6 +36,7 @@ export default function ProductsPage() {
   const isSpecialCategory = isSpecialFeatured || isSpecialPromotion;
 
   const { categories } = useCategories();
+  const labelFor = useCategoryLabel();
   const category = useMemo(() => categories.find(c => c.slug === categorySlug), [categories, categorySlug]);
 
   const filters = useMemo(() => ({
@@ -70,11 +72,11 @@ export default function ProductsPage() {
     setFilterState({ ...defaultFilterState });
   };
 
-  // Build page title & description. Category names come from the API and are
-  // already localized server-side, so we keep them as-is; only the fallback
-  // "no category" copy goes through i18n.
-  const pageTitle = category?.name
-    || (query ? t('products.resultsFor', { query }) : t('products.all'));
+  // Build page title & description. Category names are localized via the
+  // shared helper so titles/breadcrumbs flip languages with the rest of the UI.
+  const pageTitle = category
+    ? labelFor(category.slug, category.name)
+    : (query ? t('products.resultsFor', { query }) : t('products.all'));
   const pageDescription = category?.description
     || (query ? t('products.found', { count: total }) : t('products.catalogDesc'));
 
