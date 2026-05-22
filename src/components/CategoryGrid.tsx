@@ -17,6 +17,10 @@ import {
   Blocks,
 } from 'lucide-react';
 import type { Category } from '@/types';
+// Pulls translated category labels — required because category data comes
+// from the (Portuguese) mock API, so without this the home grid would stay
+// in pt-BR even when the user switches to en-US.
+import { useCategoryLabel } from '@/hooks/useCategoryLabel';
 
 const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
   Award,
@@ -61,6 +65,9 @@ interface CategoryCardProps {
 function CategoryCard({ category }: CategoryCardProps) {
   const Icon = iconMap[category.icon] || Award;
   const bgColor = colorClasses[category.color] || 'bg-primary';
+  // Resolved per-card (not lifted) because each card maps to a different slug;
+  // the hook itself is cheap (just useTranslation under the hood).
+  const labelFor = useCategoryLabel();
 
   return (
     <Link
@@ -69,7 +76,7 @@ function CategoryCard({ category }: CategoryCardProps) {
     >
       <Icon className="w-10 h-10 md:w-14 md:h-14 text-foreground/90" />
       <span className="text-xs md:text-sm font-semibold text-foreground/90 text-center leading-tight">
-        {category.name}
+        {labelFor(category.slug, category.name)}
       </span>
     </Link>
   );
