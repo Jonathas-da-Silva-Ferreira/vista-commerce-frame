@@ -10,6 +10,9 @@ import FilterSidebar, { defaultFilterState, type FilterState } from '@/component
 import { Button } from '@/components/ui/button';
 import { useProducts, useCategories } from '@/hooks/useApi';
 import { useCategoryLabel } from '@/hooks/useCategoryLabel';
+// Localiza o rótulo de subcategoria (valor pt-BR vindo da API) para que
+// breadcrumb e título reajam ao idioma ativo sem reload.
+import { useSubcategoryLabel } from '@/hooks/useSubcategoryLabel';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 const ITEMS_PER_PAGE = 8;
