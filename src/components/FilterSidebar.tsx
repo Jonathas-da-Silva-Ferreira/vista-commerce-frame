@@ -54,6 +54,7 @@ export default function FilterSidebar({
 }: FilterSidebarProps) {
   const { t } = useTranslation();
   const labelFor = useCategoryLabel();
+  const subLabelFor = useSubcategoryLabel();
   const ratingOptions = [4, 3, 2, 1];
   const activeCategoryData = categories.find(c => c.slug === activeCategory);
   return (
