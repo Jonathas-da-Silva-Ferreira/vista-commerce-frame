@@ -40,6 +40,9 @@ export default function ProductsPage() {
 
   const { categories } = useCategories();
   const labelFor = useCategoryLabel();
+  // Hook subscrito ao i18n: re-renderiza ao trocar idioma, garantindo que
+  // o crumb da subcategoria selecionada acompanhe a UI em tempo real.
+  const subLabelFor = useSubcategoryLabel();
   const category = useMemo(() => categories.find(c => c.slug === categorySlug), [categories, categorySlug]);
 
   const filters = useMemo(() => ({
