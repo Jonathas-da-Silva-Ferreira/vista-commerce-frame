@@ -25,9 +25,11 @@ export default function SellProductPage() {
   // Estado separado para controlar loading do submit —
   // previne duplo-clique e múltiplos cadastros acidentais
   const [isSubmitting, setIsSubmitting] = useState(false);
+  // Hooks subscribe to i18n changes, so option labels re-render on language switch.
+  const labelFor = useCategoryLabel();
+  const subLabelFor = useSubcategoryLabel();
 
-  // Estado único para todo o formulário ao invés de múltiplos useState —
-  // simplifica reset do form e serialização para envio à API
+
   const [form, setForm] = useState({
     name: '',
     description: '',
