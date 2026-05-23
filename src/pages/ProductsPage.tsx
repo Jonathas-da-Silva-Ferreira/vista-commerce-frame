@@ -10,6 +10,9 @@ import FilterSidebar, { defaultFilterState, type FilterState } from '@/component
 import { Button } from '@/components/ui/button';
 import { useProducts, useCategories } from '@/hooks/useApi';
 import { useCategoryLabel } from '@/hooks/useCategoryLabel';
+// Localiza o rótulo de subcategoria (valor pt-BR vindo da API) para que
+// breadcrumb e título reajam ao idioma ativo sem reload.
+import { useSubcategoryLabel } from '@/hooks/useSubcategoryLabel';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 const ITEMS_PER_PAGE = 8;
@@ -37,6 +40,9 @@ export default function ProductsPage() {
 
   const { categories } = useCategories();
   const labelFor = useCategoryLabel();
+  // Hook subscrito ao i18n: re-renderiza ao trocar idioma, garantindo que
+  // o crumb da subcategoria selecionada acompanhe a UI em tempo real.
+  const subLabelFor = useSubcategoryLabel();
   const category = useMemo(() => categories.find(c => c.slug === categorySlug), [categories, categorySlug]);
 
   const filters = useMemo(() => ({
@@ -74,15 +80,25 @@ export default function ProductsPage() {
 
   // Build page title & description. Category names are localized via the
   // shared helper so titles/breadcrumbs flip languages with the rest of the UI.
-  const pageTitle = category
-    ? labelFor(category.slug, category.name)
-    : (query ? t('products.resultsFor', { query }) : t('products.all'));
+  // Título da página: prioriza subcategoria (mais específica) > categoria >
+  // resultado de busca > catálogo geral. A ordem importa para SEO e clareza
+  // hierárquica do breadcrumb (do mais genérico ao mais específico).
+  const categoryLabel = category ? labelFor(category.slug, category.name) : '';
+  const subcategoryLabel = filterState.subcategory ? subLabelFor(filterState.subcategory) : '';
+  const pageTitle = subcategoryLabel
+    || categoryLabel
+    || (query ? t('products.resultsFor', { query }) : t('products.all'));
   const pageDescription = category?.description
     || (query ? t('products.found', { count: total }) : t('products.catalogDesc'));
 
+  // Breadcrumb hierárquico: Home > Categoria > Subcategoria. Só inclui a
+  // categoria como link quando há subcategoria ativa (evita link redundante
+  // apontando para a própria página).
   const breadcrumbs = [
     { label: t('common.home'), to: '/' },
-    { label: pageTitle },
+    ...(subcategoryLabel && category
+      ? [{ label: categoryLabel, to: `/produtos?categoria=${category.slug}` }, { label: subcategoryLabel }]
+      : [{ label: pageTitle }]),
   ];
 
   return (
