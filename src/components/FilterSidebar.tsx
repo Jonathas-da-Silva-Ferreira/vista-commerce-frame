@@ -12,6 +12,10 @@ import {
 import type { Category } from '@/types';
 import { formatCurrency } from '@/lib/utils';
 import { useCategoryLabel } from '@/hooks/useCategoryLabel';
+// Subcategory labels come from the API as raw pt-BR strings — this hook
+// localizes them at render time without breaking the filter contract (the
+// API still receives the original Portuguese value).
+import { useSubcategoryLabel } from '@/hooks/useSubcategoryLabel';
 
 // Sort options keep stable VALUES (used by the API) but their LABELS are
 // resolved via i18n at render time so they react to language changes.
