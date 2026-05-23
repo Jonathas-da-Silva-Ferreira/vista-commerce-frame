@@ -191,7 +191,7 @@ export default function SellProductPage() {
                     </SelectTrigger>
                     <SelectContent>
                       {categoryOptions.map(c => (
-                        <SelectItem key={c.id} value={c.slug}>{c.name}</SelectItem>
+                        <SelectItem key={c.id} value={c.slug}>{labelFor(c.slug, c.name)}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -206,7 +206,7 @@ export default function SellProductPage() {
                     </SelectTrigger>
                     <SelectContent>
                       {subcategoryOptions.map(s => (
-                        <SelectItem key={s} value={s}>{s}</SelectItem>
+                        <SelectItem key={s} value={s}>{subLabelFor(s)}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
