@@ -80,15 +80,25 @@ export default function ProductsPage() {
 
   // Build page title & description. Category names are localized via the
   // shared helper so titles/breadcrumbs flip languages with the rest of the UI.
-  const pageTitle = category
-    ? labelFor(category.slug, category.name)
-    : (query ? t('products.resultsFor', { query }) : t('products.all'));
+  // Título da página: prioriza subcategoria (mais específica) > categoria >
+  // resultado de busca > catálogo geral. A ordem importa para SEO e clareza
+  // hierárquica do breadcrumb (do mais genérico ao mais específico).
+  const categoryLabel = category ? labelFor(category.slug, category.name) : '';
+  const subcategoryLabel = filterState.subcategory ? subLabelFor(filterState.subcategory) : '';
+  const pageTitle = subcategoryLabel
+    || categoryLabel
+    || (query ? t('products.resultsFor', { query }) : t('products.all'));
   const pageDescription = category?.description
     || (query ? t('products.found', { count: total }) : t('products.catalogDesc'));
 
+  // Breadcrumb hierárquico: Home > Categoria > Subcategoria. Só inclui a
+  // categoria como link quando há subcategoria ativa (evita link redundante
+  // apontando para a própria página).
   const breadcrumbs = [
     { label: t('common.home'), to: '/' },
-    { label: pageTitle },
+    ...(subcategoryLabel && category
+      ? [{ label: categoryLabel, to: `/produtos?categoria=${category.slug}` }, { label: subcategoryLabel }]
+      : [{ label: pageTitle }]),
   ];
 
   return (
