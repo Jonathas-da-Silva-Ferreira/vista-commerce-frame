@@ -10,6 +10,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { categories } from '@/data/mockData';
+// Localize category/subcategory option labels so the seller form reflects
+// the active language without changing the underlying slug/value contracts.
+import { useCategoryLabel } from '@/hooks/useCategoryLabel';
+import { useSubcategoryLabel } from '@/hooks/useSubcategoryLabel';
 
 // Filtra categorias que possuem subcategorias —
 // categorias especiais (Promoção, Melhores Produtos) não devem aparecer no formulário
@@ -21,9 +25,11 @@ export default function SellProductPage() {
   // Estado separado para controlar loading do submit —
   // previne duplo-clique e múltiplos cadastros acidentais
   const [isSubmitting, setIsSubmitting] = useState(false);
+  // Hooks subscribe to i18n changes, so option labels re-render on language switch.
+  const labelFor = useCategoryLabel();
+  const subLabelFor = useSubcategoryLabel();
 
-  // Estado único para todo o formulário ao invés de múltiplos useState —
-  // simplifica reset do form e serialização para envio à API
+
   const [form, setForm] = useState({
     name: '',
     description: '',
@@ -185,7 +191,7 @@ export default function SellProductPage() {
                     </SelectTrigger>
                     <SelectContent>
                       {categoryOptions.map(c => (
-                        <SelectItem key={c.id} value={c.slug}>{c.name}</SelectItem>
+                        <SelectItem key={c.id} value={c.slug}>{labelFor(c.slug, c.name)}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -200,7 +206,7 @@ export default function SellProductPage() {
                     </SelectTrigger>
                     <SelectContent>
                       {subcategoryOptions.map(s => (
-                        <SelectItem key={s} value={s}>{s}</SelectItem>
+                        <SelectItem key={s} value={s}>{subLabelFor(s)}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>

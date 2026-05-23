@@ -12,6 +12,10 @@ import {
 import type { Category } from '@/types';
 import { formatCurrency } from '@/lib/utils';
 import { useCategoryLabel } from '@/hooks/useCategoryLabel';
+// Subcategory labels come from the API as raw pt-BR strings — this hook
+// localizes them at render time without breaking the filter contract (the
+// API still receives the original Portuguese value).
+import { useSubcategoryLabel } from '@/hooks/useSubcategoryLabel';
 
 // Sort options keep stable VALUES (used by the API) but their LABELS are
 // resolved via i18n at render time so they react to language changes.
@@ -50,6 +54,7 @@ export default function FilterSidebar({
 }: FilterSidebarProps) {
   const { t } = useTranslation();
   const labelFor = useCategoryLabel();
+  const subLabelFor = useSubcategoryLabel();
   const ratingOptions = [4, 3, 2, 1];
   const activeCategoryData = categories.find(c => c.slug === activeCategory);
   return (
@@ -83,8 +88,8 @@ export default function FilterSidebar({
         </CollapsibleContent>
       </Collapsible>
 
-      {/* Subcategories — labels kept as-is because they're free-form strings
-          from the API; localizing them would require a separate slug system. */}
+      {/* Subcategories — the API value (Portuguese) is preserved as the
+          filter key; only the visible label is translated via i18n. */}
       {activeCategoryData?.subcategories && activeCategoryData.subcategories.length > 0 && (
         <Collapsible defaultOpen>
           <CollapsibleTrigger className="flex items-center justify-between w-full font-semibold mb-3 hover:text-primary transition-colors">
@@ -105,7 +110,7 @@ export default function FilterSidebar({
                   onClick={() => onFiltersChange({ subcategory: sub })}
                   className={`block w-full text-left py-2 px-3 rounded-lg transition-colors text-sm ${filters.subcategory === sub ? 'bg-primary text-primary-foreground font-medium' : 'hover:bg-muted'}`}
                 >
-                  {sub}
+                  {subLabelFor(sub)}
                 </button>
               ))}
             </div>
