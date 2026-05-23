@@ -10,6 +10,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { categories } from '@/data/mockData';
+// Localize category/subcategory option labels so the seller form reflects
+// the active language without changing the underlying slug/value contracts.
+import { useCategoryLabel } from '@/hooks/useCategoryLabel';
+import { useSubcategoryLabel } from '@/hooks/useSubcategoryLabel';
 
 // Filtra categorias que possuem subcategorias —
 // categorias especiais (Promoção, Melhores Produtos) não devem aparecer no formulário
