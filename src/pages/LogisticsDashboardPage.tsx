@@ -6,15 +6,16 @@ import { Button } from '@/components/ui/button';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { formatCurrency } from '@/lib/utils';
 
-// Tipagem do payload retornado por /api/logistics/dashboard —
-// contrato entre frontend e backend definido aqui para validação em dev
+// Payload contract from /api/logistics/dashboard — declared here so the
+// frontend can fail loudly during development if the backend changes shape.
 interface DashboardData {
   totalOrders: number;
   avgDeliveryDays: number;
   avgShippingCost: number;
   freeShippingRate: number;
   regionBreakdown: Record<string, number>;
-  // Campos opcionais que o backend pode enviar no futuro
+  // Optional fields the backend may add later — keeping them optional avoids
+  // breaking this page when the API ships ahead of the UI.
   carrierBreakdown?: Record<string, number>;
   recentOrders?: Array<{
     id: string;
@@ -26,13 +27,14 @@ interface DashboardData {
   }>;
 }
 
-// Cores por região — HSL para consistência com design system
+// HSL kept centralized so the chart palette can be retuned in one place and
+// stays in sync with the design system tokens.
 const REGION_COLORS: Record<string, string> = {
-  Sudeste: 'hsl(220, 70%, 50%)',
-  Sul: 'hsl(150, 60%, 45%)',
-  Nordeste: 'hsl(30, 80%, 55%)',
-  Norte: 'hsl(340, 65%, 50%)',
-  'Centro-Oeste': 'hsl(270, 50%, 55%)',
+  Southeast: 'hsl(220, 70%, 50%)',
+  South: 'hsl(150, 60%, 45%)',
+  Northeast: 'hsl(30, 80%, 55%)',
+  North: 'hsl(340, 65%, 50%)',
+  'Center-West': 'hsl(270, 50%, 55%)',
 };
 
 export default function LogisticsDashboardPage() {
@@ -40,39 +42,39 @@ export default function LogisticsDashboardPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Função reutilizável para fetch — permite refresh manual
+  // Extracted so we can reuse the same fetch for the "Refresh" button without
+  // duplicating loading/error wiring.
   const fetchDashboard = async () => {
     setLoading(true);
     setError(null);
     try {
       const res = await fetch('/api/logistics/dashboard');
-      if (!res.ok) throw new Error('Falha ao carregar dados logísticos');
+      if (!res.ok) throw new Error('Failed to load logistics data');
       const json: DashboardData = await res.json();
       setData(json);
     } catch {
-      setError('Não foi possível carregar o dashboard. Tente novamente.');
+      setError('Could not load the dashboard. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
-  // Carrega dados na montagem — useEffect com [] garante chamada única
   useEffect(() => { fetchDashboard(); }, []);
 
-  // Transforma dados brutos em formato consumível pelos gráficos Recharts
+  // Transform raw payload into the array shape Recharts expects. Falling back
+  // to an estimated carrier mix keeps the page useful before the backend
+  // exposes that field.
   const chartData = useMemo(() => {
     if (!data) return { regionData: [], carrierData: [] };
 
     const regionData = Object.entries(data.regionBreakdown).map(([name, value]) => ({ name, value }));
 
-    // Se backend não enviar breakdown de transportadoras, gera distribuição
-    // proporcional estimada — será substituída por dados reais em produção
     const carrierData = data.carrierBreakdown
       ? Object.entries(data.carrierBreakdown).map(([name, value]) => ({ name, value }))
       : [
-          { name: 'Econômico', value: Math.round(data.totalOrders * 0.35) },
-          { name: 'Padrão', value: Math.round(data.totalOrders * 0.45) },
-          { name: 'Expresso', value: Math.round(data.totalOrders * 0.20) },
+          { name: 'Economy', value: Math.round(data.totalOrders * 0.35) },
+          { name: 'Standard', value: Math.round(data.totalOrders * 0.45) },
+          { name: 'Express', value: Math.round(data.totalOrders * 0.20) },
         ];
 
     return { regionData, carrierData };
@@ -83,7 +85,7 @@ export default function LogisticsDashboardPage() {
       <MainLayout>
         <div className="container mx-auto px-4 py-16 flex flex-col items-center gap-3">
           <Loader2 className="w-8 h-8 animate-spin text-primary" />
-          <p className="text-muted-foreground">Carregando dashboard logístico...</p>
+          <p className="text-muted-foreground">Loading logistics dashboard...</p>
         </div>
       </MainLayout>
     );
@@ -93,9 +95,9 @@ export default function LogisticsDashboardPage() {
     return (
       <MainLayout>
         <div className="container mx-auto px-4 py-16 text-center space-y-4">
-          <p className="text-destructive">{error || 'Erro desconhecido'}</p>
+          <p className="text-destructive">{error || 'Unknown error'}</p>
           <Button onClick={fetchDashboard} variant="outline">
-            <RefreshCw className="w-4 h-4 mr-2" /> Tentar novamente
+            <RefreshCw className="w-4 h-4 mr-2" /> Try again
           </Button>
         </div>
       </MainLayout>
@@ -107,15 +109,15 @@ export default function LogisticsDashboardPage() {
       <div className="container mx-auto px-4 py-6 space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold">Dashboard Logístico</h1>
-            <p className="text-muted-foreground text-sm">Visão geral de entregas e custos de frete</p>
+            <h1 className="text-2xl font-bold">Logistics Dashboard</h1>
+            <p className="text-muted-foreground text-sm">Overview of deliveries and shipping costs</p>
           </div>
           <Button variant="outline" size="sm" onClick={fetchDashboard} disabled={loading}>
-            <RefreshCw className={`w-4 h-4 mr-1.5 ${loading ? 'animate-spin' : ''}`} /> Atualizar
+            <RefreshCw className={`w-4 h-4 mr-1.5 ${loading ? 'animate-spin' : ''}`} /> Refresh
           </Button>
         </div>
 
-        {/* KPI Cards — métricas principais consumidas da API */}
+        {/* KPI cards — primary metrics consumed from the API */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <Card>
             <CardContent className="pt-6">
@@ -125,7 +127,7 @@ export default function LogisticsDashboardPage() {
                 </div>
                 <div>
                   <p className="text-2xl font-bold">{data.totalOrders}</p>
-                  <p className="text-xs text-muted-foreground">Pedidos enviados</p>
+                  <p className="text-xs text-muted-foreground">Orders shipped</p>
                 </div>
               </div>
             </CardContent>
@@ -138,7 +140,7 @@ export default function LogisticsDashboardPage() {
                 </div>
                 <div>
                   <p className="text-2xl font-bold">{data.avgDeliveryDays.toFixed(1)}</p>
-                  <p className="text-xs text-muted-foreground">Prazo médio (dias)</p>
+                  <p className="text-xs text-muted-foreground">Average ETA (days)</p>
                 </div>
               </div>
             </CardContent>
@@ -151,7 +153,7 @@ export default function LogisticsDashboardPage() {
                 </div>
                 <div>
                   <p className="text-2xl font-bold">{formatCurrency(data.avgShippingCost)}</p>
-                  <p className="text-xs text-muted-foreground">Custo médio frete</p>
+                  <p className="text-xs text-muted-foreground">Average shipping cost</p>
                 </div>
               </div>
             </CardContent>
@@ -164,19 +166,18 @@ export default function LogisticsDashboardPage() {
                 </div>
                 <div>
                   <p className="text-2xl font-bold">{Math.round(data.freeShippingRate * 100)}%</p>
-                  <p className="text-xs text-muted-foreground">Taxa frete grátis</p>
+                  <p className="text-xs text-muted-foreground">Free shipping rate</p>
                 </div>
               </div>
             </CardContent>
           </Card>
         </div>
 
-        {/* Gráficos lado a lado — pizza para regiões, barras para transportadoras */}
         <div className="grid lg:grid-cols-2 gap-6">
           <Card>
             <CardHeader>
               <CardTitle className="text-base flex items-center gap-2">
-                <MapPin className="w-4 h-4" /> Vendas por Região
+                <MapPin className="w-4 h-4" /> Sales by Region
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -202,7 +203,7 @@ export default function LogisticsDashboardPage() {
           <Card>
             <CardHeader>
               <CardTitle className="text-base flex items-center gap-2">
-                <TrendingUp className="w-4 h-4" /> Uso por Transportadora
+                <TrendingUp className="w-4 h-4" /> Carrier Usage
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -219,22 +220,21 @@ export default function LogisticsDashboardPage() {
           </Card>
         </div>
 
-        {/* Tabela de pedidos recentes — só exibe se a API retornar a lista */}
         {data.recentOrders && data.recentOrders.length > 0 && (
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">Últimos Envios</CardTitle>
+              <CardTitle className="text-base">Recent Shipments</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b">
-                      <th className="text-left py-2 font-medium text-muted-foreground">Pedido</th>
-                      <th className="text-left py-2 font-medium text-muted-foreground">Região</th>
-                      <th className="text-left py-2 font-medium text-muted-foreground">Transportadora</th>
-                      <th className="text-left py-2 font-medium text-muted-foreground">Prazo</th>
-                      <th className="text-right py-2 font-medium text-muted-foreground">Frete</th>
+                      <th className="text-left py-2 font-medium text-muted-foreground">Order</th>
+                      <th className="text-left py-2 font-medium text-muted-foreground">Region</th>
+                      <th className="text-left py-2 font-medium text-muted-foreground">Carrier</th>
+                      <th className="text-left py-2 font-medium text-muted-foreground">ETA</th>
+                      <th className="text-right py-2 font-medium text-muted-foreground">Shipping</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -243,10 +243,10 @@ export default function LogisticsDashboardPage() {
                         <td className="py-2 font-medium">#{o.id.padStart(4, '0')}</td>
                         <td className="py-2">{o.region}</td>
                         <td className="py-2">{o.carrier}</td>
-                        <td className="py-2">{o.days} dias</td>
+                        <td className="py-2">{o.days} days</td>
                         <td className="py-2 text-right">
                           {o.cost === 0
-                            ? <span className="text-primary font-medium">Grátis</span>
+                            ? <span className="text-primary font-medium">Free</span>
                             : formatCurrency(o.cost)
                           }
                         </td>

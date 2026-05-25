@@ -17,11 +17,10 @@ import {
   Blocks,
 } from 'lucide-react';
 import type { Category } from '@/types';
-// Pulls translated category labels — required because category data comes
-// from the (Portuguese) mock API, so without this the home grid would stay
-// in pt-BR even when the user switches to en-US.
-import { useCategoryLabel } from '@/hooks/useCategoryLabel';
 
+// Icon registry keeps the data layer free of React component references —
+// categories travel as plain JSON with a string `icon` field that we resolve
+// to a real component here. This makes the data API-portable.
 const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
   Award,
   Tag,
@@ -40,6 +39,8 @@ const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
   Blocks,
 };
 
+// Color → Tailwind class map prevents arbitrary class strings from leaking
+// into category data while still letting marketing curate the palette.
 const colorClasses: Record<string, string> = {
   gold: 'bg-category-gold',
   red: 'bg-category-red',
@@ -65,18 +66,15 @@ interface CategoryCardProps {
 function CategoryCard({ category }: CategoryCardProps) {
   const Icon = iconMap[category.icon] || Award;
   const bgColor = colorClasses[category.color] || 'bg-primary';
-  // Resolved per-card (not lifted) because each card maps to a different slug;
-  // the hook itself is cheap (just useTranslation under the hood).
-  const labelFor = useCategoryLabel();
 
   return (
     <Link
-      to={`/produtos?categoria=${category.slug}`}
+      to={`/products?category=${category.slug}`}
       className={`${bgColor} rounded-2xl p-4 md:p-6 flex flex-col items-center justify-center gap-2 aspect-square hover:scale-105 transition-transform shadow-card hover:shadow-card-hover`}
     >
       <Icon className="w-10 h-10 md:w-14 md:h-14 text-foreground/90" />
       <span className="text-xs md:text-sm font-semibold text-foreground/90 text-center leading-tight">
-        {labelFor(category.slug, category.name)}
+        {category.name}
       </span>
     </Link>
   );

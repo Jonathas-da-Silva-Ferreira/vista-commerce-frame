@@ -1,4 +1,3 @@
-import { useTranslation } from 'react-i18next';
 import type { Product } from '@/types';
 import ProductCard from './ProductCard';
 
@@ -7,10 +6,10 @@ interface ProductGridProps {
   loading?: boolean;
 }
 
+// Renders the product grid, including its loading skeleton and empty state.
+// Keeping these three cases here (instead of spreading them across pages)
+// ensures the listing UX stays consistent everywhere products are shown.
 export default function ProductGrid({ products, loading }: ProductGridProps) {
-  // Only the empty-state copy needs translation here; product data is
-  // rendered by ProductCard which has its own i18n hookup.
-  const { t } = useTranslation();
   if (loading) {
     return (
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
@@ -32,7 +31,7 @@ export default function ProductGrid({ products, loading }: ProductGridProps) {
   if (products.length === 0) {
     return (
       <div className="text-center py-12">
-        <p className="text-muted-foreground text-lg">{t('products.noResults')}</p>
+        <p className="text-muted-foreground text-lg">No products found</p>
       </div>
     );
   }

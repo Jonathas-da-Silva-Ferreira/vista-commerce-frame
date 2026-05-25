@@ -1,6 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
 import { Trash2, Minus, Plus, ShoppingBag, ArrowRight, Truck, Zap, DollarSign, Award, MapPin, Loader2, Package, Clock, AlertCircle } from 'lucide-react';
 import MainLayout from '@/components/layout/MainLayout';
 import { Button } from '@/components/ui/button';
@@ -9,48 +8,48 @@ import { useCart } from '@/contexts/CartContext';
 import { useLocation } from '@/contexts/LocationContext';
 import { formatCurrency } from '@/lib/utils';
 import { toast } from 'sonner';
-import type { ShippingOption, SellerShippingResult } from '@/types';
+import type { SellerShippingResult } from '@/types';
 
-// Ícone por tipo de recomendação — comunica visualmente a vantagem de cada opção
+// Recommendation chip per shipping option type. Centralizing icon+label
+// here means we don't repeat the visual encoding in every render branch.
 const RECOMMENDATION_LABELS: Record<string, { label: string; icon: typeof Zap; color: string }> = {
-  cheapest: { label: 'Mais barato', icon: DollarSign, color: 'text-green-600 bg-green-500/10' },
-  fastest: { label: 'Mais rápido', icon: Zap, color: 'text-amber-600 bg-amber-500/10' },
-  'best-value': { label: 'Melhor custo-benefício', icon: Award, color: 'text-primary bg-primary/10' },
+  cheapest: { label: 'Cheapest', icon: DollarSign, color: 'text-green-600 bg-green-500/10' },
+  fastest: { label: 'Fastest', icon: Zap, color: 'text-amber-600 bg-amber-500/10' },
+  'best-value': { label: 'Best value', icon: Award, color: 'text-primary bg-primary/10' },
 };
 
 /**
- * Campo de CEP inline no carrinho — permite calcular frete sem sair da página.
- * Decisão: componente separado para isolar estado do input (cep digitado)
- * do estado global de localização (LocationContext).
+ * Inline ZIP-code capture for the cart. Extracted from the page body so the
+ * input state (the typed but not-yet-submitted ZIP) doesn't leak into the
+ * page-wide LocationContext until the user explicitly submits.
  */
-function CartCepInput() {
+function CartZipInput() {
   const { location, loading, error, calculateShipping, clearLocation } = useLocation();
-  const [cep, setCep] = useState('');
+  const [zip, setZip] = useState('');
 
-  // Máscara de CEP aplicada durante digitação — UX padrão brasileiro
-  const formatCep = (value: string) => {
+  const formatZip = (value: string) => {
     const digits = value.replace(/\D/g, '').slice(0, 8);
     return digits.length > 5 ? `${digits.slice(0, 5)}-${digits.slice(5)}` : digits;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    await calculateShipping(cep);
+    await calculateShipping(zip);
   };
 
   if (location) {
-    // Localização já definida — exibe resumo com opção de alterar
+    // Already resolved — show a compact summary with an escape hatch.
     return (
       <div className="flex items-center justify-between p-3 rounded-lg bg-primary/5 border border-primary/20">
         <div className="flex items-center gap-2">
           <MapPin className="w-4 h-4 text-primary" />
           <div>
             <p className="text-sm font-medium">{location.city || location.state} - {location.state}</p>
-            <p className="text-xs text-muted-foreground">Região {location.region} • CEP {location.cep}</p>
+            <p className="text-xs text-muted-foreground">{location.region} region • ZIP {location.cep}</p>
           </div>
         </div>
         <Button variant="ghost" size="sm" onClick={clearLocation} className="text-xs h-7">
-          Alterar
+          Change
         </Button>
       </div>
     );
@@ -60,18 +59,18 @@ function CartCepInput() {
     <div className="space-y-2">
       <div className="flex items-center gap-2 text-sm">
         <MapPin className="w-4 h-4 text-muted-foreground" />
-        <span className="font-medium">Informe seu CEP para calcular o frete</span>
+        <span className="font-medium">Enter your ZIP code to calculate shipping</span>
       </div>
       <form onSubmit={handleSubmit} className="flex gap-2">
         <Input
           placeholder="00000-000"
-          value={cep}
-          onChange={e => setCep(formatCep(e.target.value))}
+          value={zip}
+          onChange={e => setZip(formatZip(e.target.value))}
           className="h-9 text-sm"
           maxLength={9}
         />
         <Button type="submit" size="sm" className="h-9 shrink-0" disabled={loading}>
-          {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Calcular'}
+          {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Calculate'}
         </Button>
       </form>
       {error && (
@@ -86,15 +85,13 @@ function CartCepInput() {
 export default function CartPage() {
   const { items, total, updateQuantity, removeItem, clearCart } = useCart();
   const { location } = useLocation();
-  // Translator is read once per render — i18next caches lookups internally.
-  const { t } = useTranslation();
-  // Estado de frete por vendedor — cada vendedor tem suas opções de transportadora
   const [sellerShipping, setSellerShipping] = useState<SellerShippingResult[]>([]);
-  // Mapa de transportadora selecionada por vendedor (sellerId → carrierId)
+  // Tracks the user's carrier choice per seller (sellerId → carrierId).
   const [selectedCarriers, setSelectedCarriers] = useState<Record<string, string>>({});
   const [shippingLoading, setShippingLoading] = useState(false);
 
-  // Agrupa items por vendedor — O(n) com reduce, recalcula apenas quando items mudam
+  // Group items by seller so the UI can mirror real-marketplace "packages",
+  // where each seller may ship from a different warehouse.
   const sellerGroups = useMemo(() => {
     const groups: Record<string, typeof items> = {};
     items.forEach(item => {
@@ -105,7 +102,8 @@ export default function CartPage() {
     return groups;
   }, [items]);
 
-  // Subtotal por vendedor — pré-calculado para exibir no card de cada seller
+  // Pre-compute per-seller subtotals so each package card can render its own
+  // total without re-summing on every render of the surrounding component.
   const sellerSubtotals = useMemo(() => {
     const totals: Record<string, number> = {};
     Object.entries(sellerGroups).forEach(([seller, sellerItems]) => {
@@ -114,14 +112,14 @@ export default function CartPage() {
     return totals;
   }, [sellerGroups]);
 
-  // Busca opções de frete por vendedor quando localização ou items mudam
+  // Fetch shipping options whenever the customer's location or cart contents
+  // change — both can affect the rate and the originating warehouse.
   useEffect(() => {
     if (!location || items.length === 0) {
       setSellerShipping([]);
       return;
     }
 
-    // Extrai lista única de vendedores — Set garante deduplição
     const sellers = [...new Set(items.map(i => i.product.seller))].map(name => ({
       sellerId: name,
       sellerName: name,
@@ -138,12 +136,13 @@ export default function CartPage() {
       }),
     })
       .then(r => {
-        if (!r.ok) throw new Error('Erro ao calcular frete');
+        if (!r.ok) throw new Error('Failed to calculate shipping');
         return r.json();
       })
       .then((data: SellerShippingResult[]) => {
         setSellerShipping(data);
-        // Auto-seleciona melhor custo-benefício por padrão para cada vendedor
+        // Default selection = best value per seller. We respect any previous
+        // explicit choice the user already made via `...prev`.
         const defaults: Record<string, string> = {};
         data.forEach(s => {
           const bestValue = s.options.find(o => o.recommendation === 'best-value') || s.options[0];
@@ -153,12 +152,11 @@ export default function CartPage() {
       })
       .catch(() => {
         setSellerShipping([]);
-        toast.error('Não foi possível calcular o frete. Tente novamente.');
+        toast.error('Could not calculate shipping. Please try again.');
       })
       .finally(() => setShippingLoading(false));
   }, [location, items]);
 
-  // Calcula frete total somando a opção selecionada de cada vendedor
   const totalShipping = useMemo(() => {
     return sellerShipping.reduce((sum, s) => {
       const carrierId = selectedCarriers[s.sellerId];
@@ -167,7 +165,8 @@ export default function CartPage() {
     }, 0);
   }, [sellerShipping, selectedCarriers]);
 
-  // Prazo máximo entre todos os vendedores — a entrega total depende do mais lento
+  // Full-order ETA is bound by the slowest package — the buyer expects the
+  // last item to arrive within this window.
   const maxDays = useMemo(() => {
     return sellerShipping.reduce((max, s) => {
       const carrierId = selectedCarriers[s.sellerId];
@@ -178,10 +177,12 @@ export default function CartPage() {
 
   const handleCheckout = async () => {
     if (!location) {
-      toast.error(t('cart.cepRequired'));
+      toast.error('Enter your ZIP code before checkout.');
       return;
     }
     try {
+      // Decrement stock in parallel — these requests are independent and
+      // serializing them would make the perceived latency much worse.
       await Promise.all(
         items.map(item =>
           fetch(`/api/products/${item.product.id}/stock`, {
@@ -192,9 +193,9 @@ export default function CartPage() {
         )
       );
       clearCart();
-      toast.success(t('cart.checkoutSuccess'));
+      toast.success('Order placed successfully! Inventory updated.');
     } catch {
-      toast.error(t('cart.checkoutError'));
+      toast.error('Could not complete checkout. Please try again.');
     }
   };
 
@@ -203,10 +204,10 @@ export default function CartPage() {
       <MainLayout>
         <div className="container mx-auto px-4 py-16 text-center">
           <ShoppingBag className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
-          <h1 className="text-2xl font-bold mb-2">{t('cart.empty')}</h1>
-          <p className="text-muted-foreground mb-6">{t('cart.emptyDesc')}</p>
-          <Link to="/produtos">
-            <Button size="lg">{t('cart.explore')} <ArrowRight className="w-5 h-5 ml-2" /></Button>
+          <h1 className="text-2xl font-bold mb-2">Your cart is empty</h1>
+          <p className="text-muted-foreground mb-6">Add products to your cart to continue shopping</p>
+          <Link to="/products">
+            <Button size="lg">Explore products <ArrowRight className="w-5 h-5 ml-2" /></Button>
           </Link>
         </div>
       </MainLayout>
@@ -218,16 +219,17 @@ export default function CartPage() {
       <div className="container mx-auto px-4 py-6">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-2xl font-bold">{t('cart.title')}</h1>
+            <h1 className="text-2xl font-bold">Shopping Cart</h1>
             <p className="text-sm text-muted-foreground mt-1">
-              {t('cart.items', { count: items.length })} {t('cart.sellers', { count: Object.keys(sellerGroups).length })}
+              {items.length} {items.length === 1 ? 'item' : 'items'} from {Object.keys(sellerGroups).length} {Object.keys(sellerGroups).length === 1 ? 'seller' : 'sellers'}
             </p>
           </div>
-          <Button variant="ghost" size="sm" onClick={clearCart} className="text-destructive">{t('cart.clear')}</Button>
+          <Button variant="ghost" size="sm" onClick={clearCart} className="text-destructive">Clear cart</Button>
         </div>
 
         <div className="grid lg:grid-cols-3 gap-8">
-          {/* Items agrupados por vendedor — simula marketplace multi-loja */}
+          {/* Items grouped by seller — mirrors how multi-store marketplaces
+              package shipments and lets each seller pick their own carrier. */}
           <div className="lg:col-span-2 space-y-6">
             {Object.entries(sellerGroups).map(([sellerName, sellerItems], groupIndex) => {
               const sellerShip = sellerShipping.find(s => s.sellerId === sellerName);
@@ -236,17 +238,16 @@ export default function CartPage() {
 
               return (
                 <div key={sellerName} className="bg-card rounded-xl shadow-card overflow-hidden border border-border/50">
-                  {/* Header do vendedor — identifica visualmente cada loja */}
                   <div className="bg-muted/50 px-4 py-3 border-b border-border flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
                         <Package className="w-4 h-4 text-primary" />
                       </div>
                       <div>
-                        <span className="font-semibold text-sm">Pacote {groupIndex + 1} • {sellerName}</span>
+                        <span className="font-semibold text-sm">Package {groupIndex + 1} • {sellerName}</span>
                         {sellerShip && (
                           <p className="text-[11px] text-muted-foreground">
-                            Enviado de {sellerShip.nearestCenter.city} - {sellerShip.nearestCenter.state} (~{sellerShip.distanceKm} km)
+                            Shipped from {sellerShip.nearestCenter.city} - {sellerShip.nearestCenter.state} (~{sellerShip.distanceKm} km)
                           </p>
                         )}
                       </div>
@@ -254,18 +255,17 @@ export default function CartPage() {
                     <span className="text-sm font-semibold text-primary">{formatCurrency(sellerSubtotals[sellerName])}</span>
                   </div>
 
-                  {/* Produtos deste vendedor */}
                   <div className="divide-y divide-border/50">
                     {sellerItems.map(({ product, quantity }) => (
                       <div key={product.id} className="flex gap-4 p-4">
-                        <Link to={`/produto/${product.id}`} className="flex-shrink-0">
+                        <Link to={`/product/${product.id}`} className="flex-shrink-0">
                           <img src={product.image} alt={product.name} className="w-20 h-20 object-cover rounded-lg" />
                         </Link>
                         <div className="flex-1 min-w-0">
-                          <Link to={`/produto/${product.id}`} className="font-medium hover:text-primary transition-colors line-clamp-1 text-sm">
+                          <Link to={`/product/${product.id}`} className="font-medium hover:text-primary transition-colors line-clamp-1 text-sm">
                             {product.name}
                           </Link>
-                          <p className="text-xs text-muted-foreground mt-0.5">Unitário: {formatCurrency(product.price)}</p>
+                          <p className="text-xs text-muted-foreground mt-0.5">Unit price: {formatCurrency(product.price)}</p>
                           <div className="flex items-center justify-between mt-2">
                             <div className="flex items-center gap-2">
                               <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => updateQuantity(product.id, quantity - 1)}>
@@ -288,17 +288,16 @@ export default function CartPage() {
                     ))}
                   </div>
 
-                  {/* Seleção de transportadora por vendedor */}
                   {shippingLoading && (
                     <div className="px-4 py-3 border-t border-border bg-muted/30 flex items-center gap-2 text-sm text-muted-foreground">
                       <Loader2 className="w-4 h-4 animate-spin" />
-                      Calculando opções de entrega...
+                      Calculating delivery options...
                     </div>
                   )}
                   {sellerShip && sellerShip.options.length > 0 && (
                     <div className="px-4 py-3 border-t border-border bg-muted/30 space-y-2">
                       <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide flex items-center gap-1.5">
-                        <Truck className="w-3.5 h-3.5" /> Escolha a entrega
+                        <Truck className="w-3.5 h-3.5" /> Choose your delivery
                       </p>
                       <div className="grid gap-2">
                         {sellerShip.options.map(option => {
@@ -331,17 +330,16 @@ export default function CartPage() {
                               <div className="text-right flex items-center gap-2">
                                 <span className="font-semibold">{formatCurrency(option.cost)}</span>
                                 <span className="text-xs text-muted-foreground flex items-center gap-0.5">
-                                  <Clock className="w-3 h-3" /> {option.days} dias
+                                  <Clock className="w-3 h-3" /> {option.days} days
                                 </span>
                               </div>
                             </button>
                           );
                         })}
                       </div>
-                      {/* Resumo da opção selecionada para este vendedor */}
                       {selectedOption && (
                         <p className="text-xs text-muted-foreground pt-1">
-                          ✓ Frete deste pacote: <span className="font-semibold text-foreground">{formatCurrency(selectedOption.cost)}</span> • Prazo: <span className="font-semibold text-foreground">{selectedOption.days} dias úteis</span>
+                          ✓ Package shipping: <span className="font-semibold text-foreground">{formatCurrency(selectedOption.cost)}</span> • ETA: <span className="font-semibold text-foreground">{selectedOption.days} business days</span>
                         </p>
                       )}
                     </div>
@@ -349,7 +347,7 @@ export default function CartPage() {
                   {!location && !shippingLoading && (
                     <div className="px-4 py-3 border-t border-border bg-muted/30 text-xs text-muted-foreground flex items-center gap-1.5">
                       <MapPin className="w-3.5 h-3.5" />
-                      Informe seu CEP no resumo ao lado para ver opções de entrega
+                      Enter your ZIP code in the summary to view delivery options
                     </div>
                   )}
                 </div>
@@ -357,21 +355,22 @@ export default function CartPage() {
             })}
           </div>
 
-          {/* Resumo do pedido — sticky para visibilidade durante scroll */}
+          {/* Order summary — sticky so it remains in view during scroll */}
           <div className="lg:col-span-1">
             <div className="bg-card rounded-xl p-6 shadow-card sticky top-24 space-y-5 border border-border/50">
-              <h2 className="text-lg font-bold">Resumo do Pedido</h2>
+              <h2 className="text-lg font-bold">Order Summary</h2>
 
-              {/* Campo de CEP inline — evita que o usuário precise voltar ao header */}
-              <CartCepInput />
+              {/* Inline ZIP capture keeps users from having to scroll up to
+                  the header just to unlock checkout. */}
+              <CartZipInput />
 
               <div className="space-y-3">
                 <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Subtotal ({items.length} {items.length === 1 ? 'item' : 'itens'})</span>
+                  <span className="text-muted-foreground">Subtotal ({items.length} {items.length === 1 ? 'item' : 'items'})</span>
                   <span className="font-medium">{formatCurrency(total)}</span>
                 </div>
 
-                {/* Frete detalhado por vendedor — transparência total dos custos */}
+                {/* Per-seller shipping breakdown — full cost transparency */}
                 {sellerShipping.length > 0 && (
                   <div className="space-y-1.5 pl-2 border-l-2 border-primary/20">
                     {sellerShipping.map(s => {
@@ -380,7 +379,7 @@ export default function CartPage() {
                       return (
                         <div key={s.sellerId} className="flex justify-between text-xs">
                           <span className="text-muted-foreground truncate mr-2">
-                            Frete {s.sellerName} <span className="text-[10px]">({option?.carrier.name})</span>
+                            Shipping {s.sellerName} <span className="text-[10px]">({option?.carrier.name})</span>
                           </span>
                           <span className="font-medium shrink-0">{option ? formatCurrency(option.cost) : '—'}</span>
                         </div>
@@ -390,11 +389,11 @@ export default function CartPage() {
                 )}
 
                 <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Frete total</span>
+                  <span className="text-muted-foreground">Total shipping</span>
                   {location ? (
                     <span className="font-semibold">{formatCurrency(totalShipping)}</span>
                   ) : (
-                    <span className="text-muted-foreground text-xs italic">Calcule acima</span>
+                    <span className="text-muted-foreground text-xs italic">Calculate above</span>
                   )}
                 </div>
 
@@ -402,7 +401,7 @@ export default function CartPage() {
                   <div className="flex items-center gap-2 text-xs bg-primary/5 rounded-lg p-2.5">
                     <Clock className="w-4 h-4 text-primary shrink-0" />
                     <span>
-                      Entrega completa em até <span className="font-bold text-foreground">{maxDays} dias úteis</span>
+                      Full delivery within <span className="font-bold text-foreground">{maxDays} business days</span>
                     </span>
                   </div>
                 )}
@@ -413,7 +412,7 @@ export default function CartPage() {
                     <span className="font-bold text-xl text-primary">{formatCurrency(total + totalShipping)}</span>
                     {total + totalShipping > 0 && (
                       <p className="text-[11px] text-muted-foreground">
-                        ou 12x de {formatCurrency((total + totalShipping) / 12)}
+                        or 12x of {formatCurrency((total + totalShipping) / 12)}
                       </p>
                     )}
                   </div>
@@ -426,18 +425,18 @@ export default function CartPage() {
                 onClick={handleCheckout}
                 disabled={!location}
               >
-                {location ? 'Finalizar Compra' : 'Informe o CEP'} <ArrowRight className="w-5 h-5 ml-2" />
+                {location ? 'Checkout' : 'Enter your ZIP code'} <ArrowRight className="w-5 h-5 ml-2" />
               </Button>
 
               {!location && (
                 <p className="text-xs text-amber-600 text-center flex items-center justify-center gap-1">
                   <AlertCircle className="w-3 h-3" />
-                  CEP obrigatório para finalizar
+                  ZIP code required to complete checkout
                 </p>
               )}
 
               <p className="text-xs text-muted-foreground text-center">
-                Ao continuar, você concorda com nossos termos de uso
+                By continuing, you agree to our terms of use
               </p>
             </div>
           </div>

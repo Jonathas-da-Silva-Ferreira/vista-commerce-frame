@@ -11,43 +11,47 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+// Single source of truth for the signed-in user. Everything else
+// (cart ownership, "my orders", reviews) derives identity from here.
 export function AuthProvider({ children }: { children: ReactNode }) {
-  // Estado centralizado do usuário — único ponto de verdade para autenticação em toda a app
   const [user, setUser] = useState<User | null>(null);
 
-  // Reidrata sessão do localStorage ao montar o provider,
-  // evitando logout indesejado ao recarregar a página
+  // Rehydrate from localStorage on mount so a page reload doesn't surprise
+  // the user by signing them out.
   useEffect(() => {
     const stored = localStorage.getItem('auth_user');
     if (stored) {
       try {
         setUser(JSON.parse(stored));
-      } catch { /* JSON corrompido — trata silenciosamente para não quebrar a app */ }
+      } catch {
+        // Corrupt JSON: ignore silently rather than crashing the whole app.
+      }
     }
   }, []);
 
-  // Centraliza persistência para garantir que estado React e localStorage
-  // estejam sempre sincronizados — evita bugs de dados inconsistentes
+  // Funneling persistence through one helper guarantees React state and
+  // storage never drift out of sync — a classic bug source in auth code.
   const persistUser = (u: User | null) => {
     setUser(u);
     if (u) localStorage.setItem('auth_user', JSON.stringify(u));
     else localStorage.removeItem('auth_user');
   };
 
-  // Login simplificado (mock): gera UUID no client para simular backend.
-  // Em produção, substituir por chamada à API que retorna token JWT
+  // Mock login: a real backend would return a signed token and we'd swap
+  // this body out without touching the public API of the provider.
   const login = (email: string, _password: string, name?: string) => {
     const u: User = {
       id: crypto.randomUUID(),
-      // Fallback para parte antes do @ — garante que o usuário sempre tenha um nome visível
+      // Fallback to the local-part of the email so we always have something
+      // human-readable to display in the header.
       name: name || email.split('@')[0],
       email,
     };
     persistUser(u);
   };
 
-  // Registro separado do login para manter contratos de API distintos,
-  // facilitando futura integração com backend real (endpoints diferentes)
+  // Kept as a distinct method so wiring a real `/register` endpoint later
+  // doesn't require changes at every call site.
   const register = (name: string, email: string, _password: string) => {
     const u: User = { id: crypto.randomUUID(), name, email };
     persistUser(u);
@@ -56,16 +60,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = () => persistUser(null);
 
   return (
-    // isAuthenticated derivado de user — evita estado duplicado que poderia
-    // ficar dessincronizado (ex: user=null mas isAuthenticated=true)
+    // `isAuthenticated` is derived, never stored separately, so it cannot
+    // get out of sync with `user`.
     <AuthContext.Provider value={{ user, isAuthenticated: !!user, login, register, logout }}>
       {children}
     </AuthContext.Provider>
   );
 }
 
-// Hook customizado com validação de contexto — lança erro explícito
-// ao invés de retornar undefined, facilitando debug para o desenvolvedor
+// Throwing here (vs returning undefined) gives a much clearer error when a
+// component is used outside the provider — easier to diagnose than a
+// "cannot read property of undefined" crash deep in a child.
 export function useAuth() {
   const ctx = useContext(AuthContext);
   if (!ctx) throw new Error('useAuth must be used within AuthProvider');

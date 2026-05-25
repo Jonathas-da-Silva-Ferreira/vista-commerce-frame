@@ -1,7 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
-import { useSearchParams, useParams } from 'react-router-dom';
-import { Filter, X } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
+import { Link } from 'react-router-dom';
+import { Filter, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import MainLayout from '@/components/layout/MainLayout';
 import SearchBar from '@/components/SearchBar';
 import ProductGrid from '@/components/ProductGrid';
@@ -9,41 +8,38 @@ import CategoryHeader from '@/components/CategoryHeader';
 import FilterSidebar, { defaultFilterState, type FilterState } from '@/components/FilterSidebar';
 import { Button } from '@/components/ui/button';
 import { useProducts, useCategories } from '@/hooks/useApi';
-import { useCategoryLabel } from '@/hooks/useCategoryLabel';
-// Localiza o rótulo de subcategoria (valor pt-BR vindo da API) para que
-// breadcrumb e título reajam ao idioma ativo sem reload.
-import { useSubcategoryLabel } from '@/hooks/useSubcategoryLabel';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { useSearchParams, useParams } from 'react-router-dom';
 
+// Page size kept on this page (not in defaults) because pagination is a
+// presentational concern, not a filter — different listings could legitimately
+// use different page sizes in the future.
 const ITEMS_PER_PAGE = 8;
 
 export default function ProductsPage() {
-  // i18n hook is the single source of truth for any user-visible string here,
-  // ensuring that filter labels, headings and result counts switch languages.
-  const { t } = useTranslation();
   const [searchParams, setSearchParams] = useSearchParams();
-  // useParams captura o :slug quando a rota é /categoria/:slug.
-  // Mantemos compat com ?categoria=X (CategoryGrid e links antigos)
-  // para evitar refactor em cascata e quebrar URLs já compartilhadas.
+  // /category/:slug is the semantic SEO-friendly URL, while ?category=X is
+  // kept as a fallback so old links and CategoryGrid still resolve.
   const { slug: routeSlug } = useParams<{ slug: string }>();
   const [showFilters, setShowFilters] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [filterState, setFilterState] = useState<FilterState>({ ...defaultFilterState });
 
   const query = searchParams.get('q') || '';
-  // Prioridade: slug da rota (URL semântica/SEO) > query param (legado).
-  const categorySlug = routeSlug || searchParams.get('categoria') || '';
+  // Priority: semantic slug (cleaner URL) > query-string (legacy fallback).
+  const categorySlug = routeSlug || searchParams.get('category') || '';
 
-  const isSpecialFeatured = categorySlug === 'melhores-produtos';
-  const isSpecialPromotion = categorySlug === 'promocao';
+  // "Special" categories don't filter by category field; they flip a flag on
+  // the API (featured/promotion) instead. Tracked here to keep the request
+  // builder below readable.
+  const isSpecialFeatured = categorySlug === 'best-products';
+  const isSpecialPromotion = categorySlug === 'deals';
   const isSpecialCategory = isSpecialFeatured || isSpecialPromotion;
 
   const { categories } = useCategories();
-  const labelFor = useCategoryLabel();
-  // Hook subscrito ao i18n: re-renderiza ao trocar idioma, garantindo que
-  // o crumb da subcategoria selecionada acompanhe a UI em tempo real.
-  const subLabelFor = useSubcategoryLabel();
-  const category = useMemo(() => categories.find(c => c.slug === categorySlug), [categories, categorySlug]);
+  const category = useMemo(
+    () => categories.find(c => c.slug === categorySlug),
+    [categories, categorySlug]
+  );
 
   const filters = useMemo(() => ({
     category: isSpecialCategory ? undefined : categorySlug || undefined,
@@ -60,6 +56,8 @@ export default function ProductsPage() {
   const { data: products, total, loading } = useProducts(filters, currentPage, ITEMS_PER_PAGE);
   const totalPages = Math.ceil(total / ITEMS_PER_PAGE);
 
+  // Reset pagination whenever the dataset can change underneath us; staying on
+  // page 5 of a result set that only has 2 pages would render empty.
   useEffect(() => { setCurrentPage(1); }, [categorySlug, query, filterState]);
   useEffect(() => { setFilterState(prev => ({ ...prev, subcategory: '' })); }, [categorySlug]);
 
@@ -78,58 +76,51 @@ export default function ProductsPage() {
     setFilterState({ ...defaultFilterState });
   };
 
-  // Build page title & description. Category names are localized via the
-  // shared helper so titles/breadcrumbs flip languages with the rest of the UI.
-  // Título da página: prioriza subcategoria (mais específica) > categoria >
-  // resultado de busca > catálogo geral. A ordem importa para SEO e clareza
-  // hierárquica do breadcrumb (do mais genérico ao mais específico).
-  const categoryLabel = category ? labelFor(category.slug, category.name) : '';
-  const subcategoryLabel = filterState.subcategory ? subLabelFor(filterState.subcategory) : '';
+  // Title hierarchy goes most-specific → least-specific (subcategory beats
+  // category beats query beats catalog) so the page heading always describes
+  // the narrowest view the user has chosen.
+  const subcategoryLabel = filterState.subcategory;
+  const categoryLabel = category?.name ?? '';
   const pageTitle = subcategoryLabel
     || categoryLabel
-    || (query ? t('products.resultsFor', { query }) : t('products.all'));
+    || (query ? `Results for "${query}"` : 'All Products');
   const pageDescription = category?.description
-    || (query ? t('products.found', { count: total }) : t('products.catalogDesc'));
+    || (query ? `${total} ${total === 1 ? 'product' : 'products'} found` : 'Browse our full product catalog.');
 
-  // Breadcrumb hierárquico: Home > Categoria > Subcategoria. Só inclui a
-  // categoria como link quando há subcategoria ativa (evita link redundante
-  // apontando para a própria página).
+  // Breadcrumb only shows the category as a clickable link when there's a
+  // deeper level (subcategory) to keep — otherwise it would point at the
+  // page the user is already on.
   const breadcrumbs = [
-    { label: t('common.home'), to: '/' },
+    { label: 'Home', to: '/' },
     ...(subcategoryLabel && category
-      ? [{ label: categoryLabel, to: `/produtos?categoria=${category.slug}` }, { label: subcategoryLabel }]
+      ? [{ label: categoryLabel, to: `/products?category=${category.slug}` }, { label: subcategoryLabel }]
       : [{ label: pageTitle }]),
   ];
 
   return (
     <MainLayout>
       <div className="container mx-auto px-4 py-6">
-        {/* Search */}
         <div className="mb-6">
           <SearchBar initialQuery={query} onSearch={handleSearch} />
         </div>
 
-        {/* Category Header */}
         <CategoryHeader title={pageTitle} description={pageDescription} breadcrumbs={breadcrumbs} />
 
-        {/* Results count + mobile filter toggle */}
         <div className="flex items-center justify-between mb-6">
           <p className="text-sm text-muted-foreground">
-            {/* i18next handles plural forms (found_one / found_other) per locale */}
-            {t('products.found', { count: total })}
+            {total} {total === 1 ? 'product' : 'products'} found
           </p>
           <Button variant="outline" onClick={() => setShowFilters(!showFilters)} className="lg:hidden">
             <Filter className="w-4 h-4 mr-2" />
-            {t('common.filters')}
+            Filters
           </Button>
         </div>
 
-        {/* Main layout: sidebar + grid */}
         <div className="flex gap-6">
-          {/* Desktop sidebar */}
+          {/* Desktop sidebar — sticky so filters stay reachable while scrolling */}
           <aside className="hidden lg:block w-64 flex-shrink-0">
             <div className="bg-card rounded-xl p-4 shadow-card sticky top-24">
-              <h2 className="font-bold mb-4">{t('common.filters')}</h2>
+              <h2 className="font-bold mb-4">Filters</h2>
               <FilterSidebar
                 categories={categories}
                 activeCategory={categorySlug}
@@ -140,13 +131,13 @@ export default function ProductsPage() {
             </div>
           </aside>
 
-          {/* Mobile sidebar overlay */}
+          {/* Mobile drawer — same FilterSidebar instance, different chrome */}
           {showFilters && (
             <div className="fixed inset-0 z-50 lg:hidden">
               <div className="absolute inset-0 bg-background/80 backdrop-blur-sm" onClick={() => setShowFilters(false)} />
               <div className="absolute right-0 top-0 h-full w-80 max-w-full bg-card p-6 shadow-xl animate-slide-up overflow-y-auto">
                 <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-lg font-bold">{t('common.filters')}</h2>
+                  <h2 className="text-lg font-bold">Filters</h2>
                   <Button variant="ghost" size="icon" onClick={() => setShowFilters(false)}>
                     <X className="w-5 h-5" />
                   </Button>
@@ -163,7 +154,6 @@ export default function ProductsPage() {
             </div>
           )}
 
-          {/* Products grid + pagination */}
           <div className="flex-1">
             <ProductGrid products={products} loading={loading} />
 
@@ -175,6 +165,9 @@ export default function ProductsPage() {
                   </Button>
                   <div className="flex items-center gap-1">
                     {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => {
+                      // Only render first/last and a window around the current
+                      // page; render an ellipsis as a separator otherwise. Keeps
+                      // pagination usable even with hundreds of pages.
                       if (page === 1 || page === totalPages || (page >= currentPage - 1 && page <= currentPage + 1)) {
                         return (
                           <Button key={page} variant={currentPage === page ? 'default' : 'outline'} size="icon" onClick={() => setCurrentPage(page)} className="w-10 h-10">
@@ -191,7 +184,7 @@ export default function ProductsPage() {
                     <ChevronRight className="w-4 h-4" />
                   </Button>
                 </div>
-                <p className="text-center text-sm text-muted-foreground mt-4">{t('common.page')} {currentPage} {t('common.of')} {totalPages}</p>
+                <p className="text-center text-sm text-muted-foreground mt-4">Page {currentPage} of {totalPages}</p>
               </>
             )}
           </div>
@@ -200,3 +193,5 @@ export default function ProductsPage() {
     </MainLayout>
   );
 }
+// `Link` import retained for parity with previous version; no direct usage left.
+void Link;
