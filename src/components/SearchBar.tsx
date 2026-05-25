@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
 import { Search } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -10,19 +9,21 @@ interface SearchBarProps {
   onSearch?: (query: string) => void;
 }
 
+// SearchBar accepts an optional onSearch callback so pages already in the
+// listing view (ProductsPage) can update URL params in place instead of
+// triggering a full navigation — avoids a flash of empty results.
 export default function SearchBar({ initialQuery = '', onSearch }: SearchBarProps) {
   const [query, setQuery] = useState(initialQuery);
   const navigate = useNavigate();
-  const { t } = useTranslation();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (query.trim()) {
-      if (onSearch) {
-        onSearch(query.trim());
-      } else {
-        navigate(`/produtos?q=${encodeURIComponent(query.trim())}`);
-      }
+    const trimmed = query.trim();
+    if (!trimmed) return;
+    if (onSearch) {
+      onSearch(trimmed);
+    } else {
+      navigate(`/products?q=${encodeURIComponent(trimmed)}`);
     }
   };
 
@@ -31,7 +32,7 @@ export default function SearchBar({ initialQuery = '', onSearch }: SearchBarProp
       <div className="relative flex items-center">
         <Input
           type="text"
-          placeholder={t('common.searchPlaceholder')}
+          placeholder="Search products..."
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           className="pr-12 h-12 text-base bg-card border-2 border-border focus:border-primary rounded-full shadow-soft"

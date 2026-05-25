@@ -1,6 +1,5 @@
 import { Link } from 'react-router-dom';
 import { ChevronDown, X, Star } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import {
@@ -11,15 +10,18 @@ import {
 } from '@/components/ui/collapsible';
 import type { Category } from '@/types';
 import { formatCurrency } from '@/lib/utils';
-import { useCategoryLabel } from '@/hooks/useCategoryLabel';
-// Subcategory labels come from the API as raw pt-BR strings — this hook
-// localizes them at render time without breaking the filter contract (the
-// API still receives the original Portuguese value).
-import { useSubcategoryLabel } from '@/hooks/useSubcategoryLabel';
 
-// Sort options keep stable VALUES (used by the API) but their LABELS are
-// resolved via i18n at render time so they react to language changes.
-const SORT_KEYS = ['relevance', 'best-sellers', 'price-asc', 'price-desc', 'rating', 'newest'] as const;
+// Sort options use stable string values (the API receives the value verbatim)
+// and human labels for the UI — keeping them paired prevents drift between
+// what the user sees and what gets sent over the wire.
+const SORT_OPTIONS: { value: string; label: string }[] = [
+  { value: 'relevance', label: 'Most relevant' },
+  { value: 'best-sellers', label: 'Best sellers' },
+  { value: 'price-asc', label: 'Lowest price' },
+  { value: 'price-desc', label: 'Highest price' },
+  { value: 'rating', label: 'Top rated' },
+  { value: 'newest', label: 'Newest' },
+];
 
 export interface FilterState {
   priceRange: [number, number];
@@ -52,48 +54,46 @@ export default function FilterSidebar({
   onClearFilters,
   onClose,
 }: FilterSidebarProps) {
-  const { t } = useTranslation();
-  const labelFor = useCategoryLabel();
-  const subLabelFor = useSubcategoryLabel();
   const ratingOptions = [4, 3, 2, 1];
   const activeCategoryData = categories.find(c => c.slug === activeCategory);
+
   return (
     <div className="space-y-6">
-      {/* Categories */}
+      {/* Categories — visible list keeps the user oriented while filtering */}
       <Collapsible defaultOpen>
         <CollapsibleTrigger className="flex items-center justify-between w-full font-semibold mb-3 hover:text-primary transition-colors">
-          {t('filters.categories')}
+          Categories
           <ChevronDown className="w-4 h-4 transition-transform data-[state=open]:rotate-180" />
         </CollapsibleTrigger>
         <CollapsibleContent>
           <div className="space-y-1 max-h-64 overflow-y-auto pr-2">
             <Link
-              to="/produtos"
+              to="/products"
               className={`block py-2 px-3 rounded-lg transition-colors text-sm ${!activeCategory ? 'bg-primary text-primary-foreground font-medium' : 'hover:bg-muted'}`}
               onClick={onClose}
             >
-              {t('filters.allCategories')}
+              All categories
             </Link>
             {categories.map((cat) => (
               <Link
                 key={cat.id}
-                to={`/produtos?categoria=${cat.slug}`}
+                to={`/products?category=${cat.slug}`}
                 className={`block py-2 px-3 rounded-lg transition-colors text-sm ${activeCategory === cat.slug ? 'bg-primary text-primary-foreground font-medium' : 'hover:bg-muted'}`}
                 onClick={onClose}
               >
-                {labelFor(cat.slug, cat.name)}
+                {cat.name}
               </Link>
             ))}
           </div>
         </CollapsibleContent>
       </Collapsible>
 
-      {/* Subcategories — the API value (Portuguese) is preserved as the
-          filter key; only the visible label is translated via i18n. */}
+      {/* Subcategories appear only for categories that define them — avoids
+          rendering an empty filter group that would just confuse users. */}
       {activeCategoryData?.subcategories && activeCategoryData.subcategories.length > 0 && (
         <Collapsible defaultOpen>
           <CollapsibleTrigger className="flex items-center justify-between w-full font-semibold mb-3 hover:text-primary transition-colors">
-            {t('filters.subcategories')}
+            Subcategories
             <ChevronDown className="w-4 h-4 transition-transform data-[state=open]:rotate-180" />
           </CollapsibleTrigger>
           <CollapsibleContent>
@@ -102,7 +102,7 @@ export default function FilterSidebar({
                 onClick={() => onFiltersChange({ subcategory: '' })}
                 className={`block w-full text-left py-2 px-3 rounded-lg transition-colors text-sm ${!filters.subcategory ? 'bg-primary text-primary-foreground font-medium' : 'hover:bg-muted'}`}
               >
-                {t('filters.allSubcategories')}
+                All
               </button>
               {activeCategoryData.subcategories.map((sub) => (
                 <button
@@ -110,7 +110,7 @@ export default function FilterSidebar({
                   onClick={() => onFiltersChange({ subcategory: sub })}
                   className={`block w-full text-left py-2 px-3 rounded-lg transition-colors text-sm ${filters.subcategory === sub ? 'bg-primary text-primary-foreground font-medium' : 'hover:bg-muted'}`}
                 >
-                  {subLabelFor(sub)}
+                  {sub}
                 </button>
               ))}
             </div>
@@ -118,10 +118,10 @@ export default function FilterSidebar({
         </Collapsible>
       )}
 
-      {/* Price Range */}
+      {/* Price range — slider gives faster exploration than two number inputs */}
       <Collapsible defaultOpen>
         <CollapsibleTrigger className="flex items-center justify-between w-full font-semibold mb-3 hover:text-primary transition-colors">
-          {t('filters.priceRange')}
+          Price range
           <ChevronDown className="w-4 h-4 transition-transform data-[state=open]:rotate-180" />
         </CollapsibleTrigger>
         <CollapsibleContent>
@@ -136,17 +136,18 @@ export default function FilterSidebar({
             />
             <div className="flex items-center justify-between text-sm">
               <span className="bg-muted px-2 py-1 rounded">{formatCurrency(filters.priceRange[0])}</span>
-              <span className="text-muted-foreground">{t('common.until')}</span>
+              <span className="text-muted-foreground">to</span>
               <span className="bg-muted px-2 py-1 rounded">{formatCurrency(filters.priceRange[1])}</span>
             </div>
           </div>
         </CollapsibleContent>
       </Collapsible>
 
-      {/* Rating */}
+      {/* Rating filter — "X stars and above" pattern matches Amazon/Mercado
+          conventions and is more useful than exact-equality buckets. */}
       <Collapsible defaultOpen>
         <CollapsibleTrigger className="flex items-center justify-between w-full font-semibold mb-3 hover:text-primary transition-colors">
-          {t('filters.rating')}
+          Rating
           <ChevronDown className="w-4 h-4 transition-transform data-[state=open]:rotate-180" />
         </CollapsibleTrigger>
         <CollapsibleContent>
@@ -155,7 +156,7 @@ export default function FilterSidebar({
               onClick={() => onFiltersChange({ minRating: 0 })}
               className={`flex items-center gap-2 w-full py-2 px-3 rounded-lg text-sm transition-colors ${filters.minRating === 0 ? 'bg-primary text-primary-foreground font-medium' : 'hover:bg-muted'}`}
             >
-              {t('filters.allSubcategories')}
+              All
             </button>
             {ratingOptions.map((rating) => (
               <button
@@ -171,7 +172,7 @@ export default function FilterSidebar({
                     />
                   ))}
                 </div>
-                <span>{t('filters.andAbove')}</span>
+                <span>&amp; up</span>
               </button>
             ))}
           </div>
@@ -180,12 +181,12 @@ export default function FilterSidebar({
 
       {/* Sort */}
       <div>
-        <span className="font-semibold block mb-3">{t('filters.sortBy')}</span>
+        <span className="font-semibold block mb-3">Sort by</span>
         <Select value={filters.sortBy} onValueChange={(v) => onFiltersChange({ sortBy: v })}>
-          <SelectTrigger className="w-full"><SelectValue placeholder={t('filters.sortBy')} /></SelectTrigger>
+          <SelectTrigger className="w-full"><SelectValue placeholder="Sort by" /></SelectTrigger>
           <SelectContent>
-            {SORT_KEYS.map(key => (
-              <SelectItem key={key} value={key}>{t(`filters.sort.${key}`)}</SelectItem>
+            {SORT_OPTIONS.map(opt => (
+              <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
             ))}
           </SelectContent>
         </Select>
@@ -193,7 +194,7 @@ export default function FilterSidebar({
 
       <Button variant="outline" className="w-full" onClick={onClearFilters}>
         <X className="w-4 h-4 mr-2" />
-        {t('filters.clear')}
+        Clear filters
       </Button>
     </div>
   );

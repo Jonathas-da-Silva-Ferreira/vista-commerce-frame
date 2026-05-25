@@ -8,15 +8,15 @@ import { useToast } from '@/hooks/use-toast';
 import { StarRating } from './StarRating';
 import { ReviewForm } from './ReviewForm';
 
-// Seção principal de avaliações — orquestra hook de dados, formulário e listagem.
-// Mantemos toda a lógica de "pode avaliar?" aqui para que ReviewForm seja reutilizável.
+// Owns the "can this user review?" rules so ReviewForm can stay a pure
+// controlled input, reusable in other contexts (modals, post-order flows).
 interface ProductReviewsProps {
   productId: string;
 }
 
-// Formatação de data localizada — extraído para fora do render
-// pois cria Intl.DateTimeFormat (operação custosa) a cada chamada.
-const dateFormatter = new Intl.DateTimeFormat('pt-BR', {
+// Intl.DateTimeFormat is hoisted out of render — constructing one is
+// surprisingly expensive and we'd otherwise rebuild it for every review row.
+const dateFormatter = new Intl.DateTimeFormat('en-US', {
   day: '2-digit', month: 'short', year: 'numeric',
 });
 
@@ -27,8 +27,8 @@ export function ProductReviews({ productId }: ProductReviewsProps) {
   const [submitting, setSubmitting] = useState(false);
   const [showForm, setShowForm] = useState(false);
 
-  // Verifica se o usuário atual já avaliou — regra: 1 review por usuário/produto.
-  // useMemo evita scan a cada render quando reviews é grande.
+  // Business rule: one review per user per product. Memoized because the scan
+  // would otherwise run on every keystroke in unrelated parent state.
   const userAlreadyReviewed = useMemo(
     () => !!user && reviews.some(r => r.userId === user.id),
     [reviews, user]
@@ -39,41 +39,40 @@ export function ProductReviews({ productId }: ProductReviewsProps) {
     setSubmitting(true);
     try {
       await submitReview({ userId: user.id, userName: user.name, ...data });
-      toast({ title: 'Avaliação enviada!', description: 'Obrigado por compartilhar sua experiência.' });
+      toast({ title: 'Review submitted!', description: 'Thanks for sharing your experience.' });
       setShowForm(false);
     } finally {
-      // setSubmitting no finally garante reset mesmo em erro,
-      // evitando botão travado se a chamada falhar.
+      // Reset in finally so a failed request still unblocks the submit button.
       setSubmitting(false);
     }
   };
 
   return (
-    <section id="avaliacoes" className="border-t border-border pt-10 mt-10">
+    <section id="reviews" className="border-t border-border pt-10 mt-10">
       <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
         <div>
-          <h2 className="text-2xl font-bold">Avaliações dos clientes</h2>
-          {/* Cabeçalho com média + total: padrão de e-commerce que reforça
-              prova social antes mesmo de o usuário ler comentários individuais. */}
+          <h2 className="text-2xl font-bold">Customer reviews</h2>
+          {/* Aggregate score is shown above individual reviews — social
+              proof is most persuasive when seen before the long-form text. */}
           {!loading && total > 0 && (
             <div className="flex items-center gap-2 mt-2">
               <StarRating value={average} size={20} />
               <span className="font-semibold text-lg">{average.toFixed(1)}</span>
               <span className="text-sm text-muted-foreground">
-                ({total} {total === 1 ? 'avaliação' : 'avaliações'})
+                ({total} {total === 1 ? 'review' : 'reviews'})
               </span>
             </div>
           )}
         </div>
 
-        {/* CTA condicional baseado em estado de auth — usuários deslogados
-            recebem link para login ao invés de mensagem genérica de erro. */}
+        {/* CTA branches on auth so signed-out visitors get an actionable
+            login link rather than a confusing disabled state. */}
         {isAuthenticated && !userAlreadyReviewed && !showForm && (
-          <Button onClick={() => setShowForm(true)}>Avaliar produto</Button>
+          <Button onClick={() => setShowForm(true)}>Write a review</Button>
         )}
         {!isAuthenticated && (
           <Button asChild variant="outline">
-            <Link to="/login">Entrar para avaliar</Link>
+            <Link to="/login">Sign in to review</Link>
           </Button>
         )}
       </div>
@@ -84,18 +83,18 @@ export function ProductReviews({ productId }: ProductReviewsProps) {
         </div>
       )}
 
-      {/* Aviso explícito quando usuário já avaliou — transparência sobre a regra
-          de negócio "1 review por produto" evita tentativas frustradas. */}
+      {/* Make the "one review per product" rule visible up-front — silent
+          rejections after a long write-up are a top frustration in reviews UX. */}
       {userAlreadyReviewed && !showForm && (
         <p className="text-sm text-muted-foreground mb-6 italic">
-          Você já avaliou este produto. Obrigado pela contribuição!
+          You've already reviewed this product. Thanks for your feedback!
         </p>
       )}
 
       {loading && (
         <div className="flex items-center justify-center py-10 text-muted-foreground">
           <Loader2 className="w-5 h-5 animate-spin mr-2" />
-          Carregando avaliações…
+          Loading reviews…
         </div>
       )}
 
@@ -104,12 +103,12 @@ export function ProductReviews({ productId }: ProductReviewsProps) {
       )}
 
       {!loading && !error && reviews.length === 0 && (
-        // Empty state acionável — mensagem positiva incentiva ser o primeiro a avaliar
-        // ao invés de simplesmente informar ausência de dados.
+        // Actionable empty state — invites the next person to review instead
+        // of simply reporting an absence of data.
         <div className="text-center py-12 border border-dashed border-border rounded-xl">
           <MessageSquare className="w-10 h-10 mx-auto text-muted-foreground/50 mb-3" />
-          <p className="font-medium">Nenhuma avaliação ainda.</p>
-          <p className="text-sm text-muted-foreground mt-1">Seja o primeiro a avaliar este produto!</p>
+          <p className="font-medium">No reviews yet.</p>
+          <p className="text-sm text-muted-foreground mt-1">Be the first to review this product!</p>
         </div>
       )}
 
@@ -118,8 +117,8 @@ export function ProductReviews({ productId }: ProductReviewsProps) {
           {reviews.map(r => (
             <li key={r.id} className="p-5 rounded-xl border border-border bg-card">
               <div className="flex items-start gap-3">
-                {/* Avatar gerado a partir da inicial — evita dependência de
-                    serviço externo (gravatar) e funciona offline. */}
+                {/* Initial avatar avoids depending on an external service
+                    (e.g. Gravatar) and keeps the UI working offline. */}
                 <div className="w-10 h-10 rounded-full bg-primary/10 text-primary flex items-center justify-center font-semibold shrink-0">
                   {r.userName.charAt(0).toUpperCase()}
                 </div>

@@ -13,15 +13,15 @@ import { formatCurrency } from '@/lib/utils';
 import { ProductReviews } from '@/components/reviews/ProductReviews';
 import type { ShippingOption } from '@/types';
 
-// Componente isolado de galeria — estado de imagem selecionada é local
-// pois não precisa ser compartilhado com outros componentes
+// Gallery is split out so the "currently selected image" state stays local —
+// nothing outside this widget needs to know which thumbnail is active.
 function ImageGallery({ images, name }: { images: string[]; name: string }) {
   const [selectedIndex, setSelectedIndex] = useState(0);
 
   return (
     <div className="flex flex-col-reverse md:flex-row gap-3">
-      {/* Thumbnails na lateral (desktop) ou embaixo (mobile) —
-          flex-col-reverse inverte a ordem visual sem alterar DOM */}
+      {/* flex-col-reverse keeps the main image on top on mobile without
+          duplicating markup or hiding nodes per breakpoint. */}
       <div className="flex md:flex-col gap-2 overflow-x-auto md:overflow-y-auto md:max-h-[500px] pb-1 md:pb-0">
         {images.map((img, i) => (
           <button
@@ -38,7 +38,8 @@ function ImageGallery({ images, name }: { images: string[]; name: string }) {
         ))}
       </div>
 
-      {/* Imagem principal — key={selectedIndex} força re-mount para animação de fade */}
+      {/* key={selectedIndex} forces a remount so the fade-in animation
+          replays each time the buyer picks a new image. */}
       <div className="relative flex-1 aspect-square overflow-hidden rounded-xl bg-muted">
         <img
           src={images[selectedIndex]}
@@ -51,27 +52,29 @@ function ImageGallery({ images, name }: { images: string[]; name: string }) {
   );
 }
 
-// Labels de recomendação para cada tipo de sugestão inteligente
 const RECOMMENDATION_LABELS: Record<string, { label: string; icon: typeof Zap }> = {
-  cheapest: { label: 'Mais barato', icon: DollarSign },
-  fastest: { label: 'Mais rápido', icon: Zap },
-  'best-value': { label: 'Melhor custo-benefício', icon: Award },
+  cheapest: { label: 'Cheapest', icon: DollarSign },
+  fastest: { label: 'Fastest', icon: Zap },
+  'best-value': { label: 'Best value', icon: Award },
 };
 
-// Calculadora de frete avançada — exibe múltiplas transportadoras com sugestão inteligente
+// Per-product shipping calculator with multi-carrier comparison. Lives inside
+// this page (not a shared component) because the recommendation copy and
+// "trust badges" beneath it are product-detail specific.
 function ShippingCalculator({ productId }: { productId: string }) {
   const { location, loading: locLoading, error, calculateShipping } = useLocation();
-  const [cep, setCep] = useState('');
+  const [zip, setZip] = useState('');
   const [shippingOptions, setShippingOptions] = useState<ShippingOption[]>([]);
   const [nearestCenter, setNearestCenter] = useState<{ name: string; city: string; state: string } | null>(null);
   const [distanceKm, setDistanceKm] = useState(0);
 
-  const formatCep = (v: string) => {
+  const formatZip = (v: string) => {
     const d = v.replace(/\D/g, '').slice(0, 8);
     return d.length > 5 ? `${d.slice(0, 5)}-${d.slice(5)}` : d;
   };
 
-  // Busca opções de transportadora quando localização muda
+  // Refetch carrier options whenever the user's location changes so the
+  // displayed prices/days always reflect the current destination.
   useEffect(() => {
     if (location) {
       fetch('/api/shipping/options', {
@@ -95,28 +98,27 @@ function ShippingCalculator({ productId }: { productId: string }) {
 
   const handleCalc = async (e: React.FormEvent) => {
     e.preventDefault();
-    await calculateShipping(cep);
+    await calculateShipping(zip);
   };
 
   return (
     <div className="space-y-3">
       <div className="flex items-center gap-2">
         <Truck className="w-5 h-5 text-primary" />
-        <span className="font-semibold text-sm">Calcular frete e prazo</span>
+        <span className="font-semibold text-sm">Calculate shipping &amp; delivery</span>
       </div>
       <form onSubmit={handleCalc} className="flex gap-2">
-        <Input placeholder="00000-000" value={cep} onChange={e => setCep(formatCep(e.target.value))} className="h-9" maxLength={9} />
+        <Input placeholder="00000-000" value={zip} onChange={e => setZip(formatZip(e.target.value))} className="h-9" maxLength={9} />
         <Button type="submit" variant="outline" size="sm" className="h-9" disabled={locLoading}>
-          {locLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Calcular'}
+          {locLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Calculate'}
         </Button>
       </form>
       {error && <p className="text-xs text-destructive">{error}</p>}
 
-      {/* Opções de transportadora com recomendação inteligente */}
       {shippingOptions.length > 0 && location && (
         <div className="bg-muted/50 rounded-lg p-3 space-y-3 text-sm">
           <p className="text-xs text-muted-foreground">
-            Entrega para {location.city || location.state} • Enviado de {nearestCenter?.city} (~{distanceKm} km)
+            Delivery to {location.city || location.state} • Shipped from {nearestCenter?.city} (~{distanceKm} km)
           </p>
           <div className="space-y-2">
             {shippingOptions.map(option => {
@@ -140,7 +142,7 @@ function ShippingCalculator({ productId }: { productId: string }) {
                   </div>
                   <div className="text-right">
                     <span className="font-semibold text-primary">{formatCurrency(option.cost)}</span>
-                    <span className="text-xs text-muted-foreground ml-1.5">{option.days} dias</span>
+                    <span className="text-xs text-muted-foreground ml-1.5">{option.days} days</span>
                   </div>
                 </div>
               );
@@ -149,19 +151,20 @@ function ShippingCalculator({ productId }: { productId: string }) {
         </div>
       )}
 
-      {/* Selos de confiança */}
+      {/* Trust badges directly under the calculator — proximity to the price
+          maximizes their reassurance effect right before "Add to cart". */}
       <div className="grid grid-cols-3 gap-3 pt-2">
         <div className="flex flex-col items-center text-center gap-1.5 p-3 rounded-lg bg-muted/50">
           <Shield className="w-5 h-5 text-primary" />
-          <span className="text-xs font-medium">Compra Segura</span>
+          <span className="text-xs font-medium">Secure Checkout</span>
         </div>
         <div className="flex flex-col items-center text-center gap-1.5 p-3 rounded-lg bg-muted/50">
           <RotateCcw className="w-5 h-5 text-primary" />
-          <span className="text-xs font-medium">Devolução Grátis</span>
+          <span className="text-xs font-medium">Free Returns</span>
         </div>
         <div className="flex flex-col items-center text-center gap-1.5 p-3 rounded-lg bg-muted/50">
           <Truck className="w-5 h-5 text-primary" />
-          <span className="text-xs font-medium">Entrega Rápida</span>
+          <span className="text-xs font-medium">Fast Delivery</span>
         </div>
       </div>
     </div>
@@ -174,17 +177,14 @@ export default function ProductDetailPage() {
   const { addItem, isInCart } = useCart();
   const { toggleFavorite, isFavorite } = useFavorites();
 
-  // Hooks customizados encapsulam fetch + cache via React Query —
-  // componente não precisa gerenciar loading/error manualmente
   const { product, loading } = useProduct(id);
   const { categories } = useCategories();
   const { products: relatedProducts } = useRelatedProducts(product?.id, product?.category);
 
-  // Busca categoria para breadcrumb — derivado e não armazenado em estado
   const category = categories.find(c => c.slug === product?.category);
 
-  // Skeleton loading — mantém layout estável enquanto carrega,
-  // evitando CLS (Cumulative Layout Shift) que prejudica UX e SEO
+  // Skeleton mirrors the final layout so we don't shift content when data
+  // arrives — keeps CLS low, which helps both UX and Core Web Vitals.
   if (loading) {
     return (
       <MainLayout>
@@ -218,20 +218,20 @@ export default function ProductDetailPage() {
     return (
       <MainLayout>
         <div className="container mx-auto px-4 py-16 text-center">
-          <h1 className="text-2xl font-bold mb-4">Produto não encontrado</h1>
-          <Link to="/produtos" className="text-primary hover:underline">Voltar para produtos</Link>
+          <h1 className="text-2xl font-bold mb-4">Product not found</h1>
+          <Link to="/products" className="text-primary hover:underline">Back to products</Link>
         </div>
       </MainLayout>
     );
   }
 
-  // Desconto calculado como derivação — não armazenado em estado
-  // pois é valor puro derivado de price/originalPrice
+  // Discount is derived from the price pair — never store it; that's how
+  // promo banners go stale when a sale ends.
   const discount = product.originalPrice
     ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
     : null;
 
-  // Fallback para produtos sem galeria — garante que sempre haja ao menos 1 imagem
+  // Gallery fallback ensures we always have at least one image to render.
   const allImages = product.images?.length ? product.images : [product.image];
 
   const handleAddToCart = () => {
@@ -241,27 +241,23 @@ export default function ProductDetailPage() {
   return (
     <MainLayout>
       <div className="container mx-auto px-4 py-6">
-        {/* Breadcrumb — navegação hierárquica para SEO e usabilidade */}
         <nav className="flex items-center gap-2 text-sm text-muted-foreground mb-6 flex-wrap">
-          <Link to="/" className="hover:text-foreground transition-colors">Início</Link>
+          <Link to="/" className="hover:text-foreground transition-colors">Home</Link>
           <ChevronRight className="w-4 h-4" />
-          <Link to="/produtos" className="hover:text-foreground transition-colors">Produtos</Link>
+          <Link to="/products" className="hover:text-foreground transition-colors">Products</Link>
           {category && (
             <>
               <ChevronRight className="w-4 h-4" />
-              <Link to={`/produtos?categoria=${category.slug}`} className="hover:text-foreground transition-colors">{category.name}</Link>
+              <Link to={`/products?category=${category.slug}`} className="hover:text-foreground transition-colors">{category.name}</Link>
             </>
           )}
           <ChevronRight className="w-4 h-4" />
           <span className="text-foreground font-medium line-clamp-1">{product.name}</span>
         </nav>
 
-        {/* Layout 2 colunas: imagem à esquerda, info à direita — padrão e-commerce */}
         <div className="grid md:grid-cols-2 gap-8 lg:gap-12 mb-16">
           <div className="relative">
             <ImageGallery images={allImages} name={product.name} />
-            {/* Badge de desconto posicionado absolute sobre a imagem —
-                z-10 garante visibilidade sobre thumbnails */}
             {discount && (
               <span className="absolute top-4 right-4 md:left-auto bg-destructive text-destructive-foreground px-3 py-1.5 rounded-lg text-sm font-bold z-10">
                 -{discount}%
@@ -271,12 +267,12 @@ export default function ProductDetailPage() {
 
           <div className="space-y-5">
             <div>
-              <p className="text-sm text-muted-foreground mb-1">Vendido por <span className="text-primary font-medium">{product.seller}</span></p>
+              <p className="text-sm text-muted-foreground mb-1">Sold by <span className="text-primary font-medium">{product.seller}</span></p>
               <h1 className="text-2xl md:text-3xl font-bold leading-tight">{product.name}</h1>
             </div>
 
-            {/* Rating com estrelas preenchidas baseado no floor —
-                arredonda para baixo para não inflacionar avaliação */}
+            {/* Math.floor on the rating prevents an inflated count of filled
+                stars (e.g. 3.7 should still show 3 filled, not 4). */}
             <div className="flex items-center gap-2">
               <div className="flex items-center gap-0.5">
                 {Array.from({ length: 5 }).map((_, i) => (
@@ -284,10 +280,9 @@ export default function ProductDetailPage() {
                 ))}
               </div>
               <span className="font-semibold">{product.rating}</span>
-              <span className="text-muted-foreground text-sm">({product.reviewCount} avaliações)</span>
+              <span className="text-muted-foreground text-sm">({product.reviewCount} reviews)</span>
             </div>
 
-            {/* Bloco de preço com destaque visual — elemento mais importante da página */}
             <div className="bg-card border border-border rounded-xl p-5 space-y-1">
               {product.originalPrice && (
                 <div className="flex items-center gap-2">
@@ -300,25 +295,24 @@ export default function ProductDetailPage() {
                 </div>
               )}
               <p className="text-3xl md:text-4xl font-bold text-primary">{formatCurrency(product.price)}</p>
-              {/* Parcelamento calculado inline — divisão simples sem juros */}
+              {/* 12x installment hint is a marketplace convention that lifts
+                  conversion by reframing high tickets as monthly amounts. */}
               <p className="text-sm text-muted-foreground">
-                Em até <span className="font-semibold text-foreground">12x</span> de{' '}
-                <span className="font-semibold text-foreground">{formatCurrency(product.price / 12)}</span> sem juros
+                Up to <span className="font-semibold text-foreground">12x</span> of{' '}
+                <span className="font-semibold text-foreground">{formatCurrency(product.price / 12)}</span> interest-free
               </p>
             </div>
 
             <div>
-              <h2 className="font-semibold mb-2">Descrição</h2>
+              <h2 className="font-semibold mb-2">Description</h2>
               <p className="text-muted-foreground leading-relaxed">{product.description}</p>
             </div>
 
-            {/* Frete calculado por produto — usa dados do vendedor, não valor genérico */}
             <ShippingCalculator productId={product.id} />
 
-            {/* Controle de quantidade com limites: mín=1, máx=estoque */}
             <div className="space-y-4 pt-2">
               <div className="flex items-center gap-4">
-                <span className="font-medium">Quantidade:</span>
+                <span className="font-medium">Quantity:</span>
                 <div className="flex items-center gap-2">
                   <Button variant="outline" size="icon" onClick={() => setQuantity(Math.max(1, quantity - 1))} disabled={quantity <= 1}>
                     <Minus className="w-4 h-4" />
@@ -330,16 +324,16 @@ export default function ProductDetailPage() {
                 </div>
                 <span className="text-sm text-muted-foreground flex items-center gap-1">
                   <CheckCircle2 className="w-3.5 h-3.5 text-primary" />
-                  {product.stock} em estoque
+                  {product.stock} in stock
                 </span>
               </div>
 
               <div className="flex gap-3">
-                {/* Texto do botão muda se produto já está no carrinho —
-                    feedback contextual para o usuário */}
+                {/* CTA label changes once the item is already in the cart so
+                    the user sees the actual outcome of clicking. */}
                 <Button className="flex-1 h-12 text-base font-semibold" size="lg" onClick={handleAddToCart}>
                   <ShoppingCart className="w-5 h-5 mr-2" />
-                  {isInCart(product.id) ? 'Atualizar Carrinho' : 'Comprar'}
+                  {isInCart(product.id) ? 'Update cart' : 'Add to cart'}
                 </Button>
                 <Button
                   variant="outline"
@@ -354,16 +348,14 @@ export default function ProductDetailPage() {
           </div>
         </div>
 
-        {/* Avaliações dos clientes — logo após o bloco de compra para reforçar
-            prova social no momento de decisão, antes de produtos relacionados. */}
+        {/* Reviews positioned right after the buy box — social proof at the
+            exact moment of decision converts better than below related items. */}
         <ProductReviews productId={product.id} />
 
-        {/* Produtos relacionados — exibido apenas se houver itens na mesma categoria */}
         {relatedProducts.length > 0 && (
           <section className="border-t border-border pt-10 mt-10">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-bold">Produtos Relacionados</h2>
-              <span className="text-xs text-muted-foreground bg-muted px-3 py-1 rounded-full">🤖 IA em breve</span>
+              <h2 className="text-2xl font-bold">Related Products</h2>
             </div>
             <ProductGrid products={relatedProducts} />
           </section>

@@ -1,122 +1,119 @@
-// Conteúdo institucional centralizado em uma única fonte de verdade.
-// Por que aqui (e não inline nas páginas)?
-// 1) Desacoplamento: o componente apenas RENDERIZA — não conhece o conteúdo.
-// 2) Substituível: trocar por um CMS/Headless (Strapi, Sanity) só requer
-//    mudar o handler do mockServer; tipos e componentes permanecem iguais.
-// 3) i18n-ready: facilita futura internacionalização (basta retornar o objeto
-//    correto baseado em locale no handler da API).
+// Institutional copy centralized in a single source of truth.
+// - Decoupling: components RENDER, they don't know the content.
+// - Swappable: pointing at a CMS later (Strapi, Sanity) only requires changing
+//   the mockServer handler — types and components stay identical.
 
 import type { AboutContent, HistoryContent, TermsContent } from '@/types';
 
-// --- Sobre Nós ----------------------------------------------------------------
-// Estrutura "seções" ao invés de campos fixos (mission, vision, values) para
-// permitir que o time de marketing adicione/remova blocos sem mudar o front.
+// --- About --------------------------------------------------------------------
+// Modeled as an array of sections (instead of named fields like mission/vision)
+// so marketing can add/remove blocks without any code change.
 export const aboutContent: AboutContent = {
   companyName: 'Nexora',
-  tagline: 'O marketplace que conecta vendedores e compradores em todo o Brasil.',
+  tagline: 'The marketplace that connects sellers and buyers worldwide.',
   description:
-    'Somos uma plataforma de comércio eletrônico criada para democratizar o acesso ao mercado digital, oferecendo ferramentas profissionais para pequenos e grandes vendedores e uma experiência de compra segura e moderna para milhões de brasileiros.',
+    "We're a modern e-commerce platform built to democratize access to digital commerce — offering professional tools to sellers of every size and a safe, modern shopping experience to millions of customers.",
   sections: [
     {
-      id: 'quem-somos',
-      title: 'Quem Somos',
-      body: 'A Nexora nasceu em 2024 com o propósito de simplificar o e-commerce no Brasil. Reunimos tecnologia, logística inteligente e curadoria de vendedores para entregar uma experiência de compra confiável, rápida e justa para todos os envolvidos.',
+      id: 'who-we-are',
+      title: 'Who We Are',
+      body: 'Nexora was founded in 2024 with the mission of simplifying online commerce. We bring together technology, smart logistics, and seller curation to deliver a buying experience that is reliable, fast, and fair for everyone involved.',
     },
     {
-      id: 'missao',
-      title: 'Nossa Missão',
-      body: 'Conectar pessoas a produtos que transformam o dia a dia, oferecendo uma plataforma justa, segura e acessível para vendedores de todos os portes.',
+      id: 'mission',
+      title: 'Our Mission',
+      body: 'Connect people to the products that transform their day-to-day, offering a fair, secure, and accessible platform for sellers of all sizes.',
     },
     {
-      id: 'visao',
-      title: 'Nossa Visão',
-      body: 'Ser, até 2030, o marketplace mais confiável da América Latina, reconhecido pela qualidade da experiência e pela força da comunidade de vendedores.',
+      id: 'vision',
+      title: 'Our Vision',
+      body: 'To become, by 2030, the most trusted marketplace in the world — recognized for the quality of its experience and the strength of its seller community.',
     },
     {
-      id: 'valores',
-      title: 'Nossos Valores',
-      body: 'Transparência em cada transação, respeito ao cliente, valorização do pequeno empreendedor, inovação contínua e responsabilidade social em tudo que fazemos.',
+      id: 'values',
+      title: 'Our Values',
+      body: 'Transparency in every transaction, respect for the customer, support for small entrepreneurs, continuous innovation, and social responsibility in everything we do.',
     },
   ],
 };
 
-// --- História (timeline) ------------------------------------------------------
-// Modelado como array ordenado para preservar a sequência cronológica e
-// permitir renderização simples como timeline vertical.
+// --- History (timeline) -------------------------------------------------------
+// Ordered array so the chronological sequence is preserved and the page can
+// render it as a simple vertical timeline.
 export const historyContent: HistoryContent = {
-  title: 'Nossa História',
-  intro: 'Da ideia inicial ao marketplace nacional — conheça os principais marcos que construíram a Nexora.',
+  title: 'Our History',
+  intro: 'From the initial idea to a global marketplace — meet the milestones that shaped Nexora.',
   milestones: [
     {
       year: '2024',
-      title: 'Fundação da empresa',
+      title: 'Company founded',
       description:
-        'Um pequeno time de engenheiros e empreendedores se uniu com a missão de criar um marketplace mais justo e moderno para o mercado brasileiro.',
+        'A small team of engineers and entrepreneurs came together to build a fairer, more modern marketplace for online commerce.',
     },
     {
       year: '2025',
-      title: 'Lançamento da plataforma',
+      title: 'Platform launch',
       description:
-        'Subimos a primeira versão pública da Nexora com mais de 500 vendedores parceiros e cobertura logística para todas as capitais do país.',
+        'We shipped the first public version of Nexora with more than 500 partner sellers and logistics coverage across all major cities.',
     },
     {
       year: '2026',
-      title: 'Expansão do marketplace',
+      title: 'Marketplace expansion',
       description:
-        'Atingimos a marca de 10.000 vendedores ativos, lançamos centros de distribuição nas 5 regiões do Brasil e estreamos nosso programa de frete inteligente.',
+        'We reached 10,000 active sellers, opened distribution centers in five regions, and launched our smart-shipping program.',
     },
     {
       year: '2027',
-      title: 'Marketplace inteligente',
+      title: 'Smart marketplace',
       description:
-        'Investimos em recomendação personalizada, otimização logística baseada em distância e ferramentas avançadas para sellers profissionais.',
+        'Investments in personalized recommendations, distance-based logistics optimization, and advanced tools for professional sellers.',
     },
   ],
 };
 
-// --- Termos de Uso ------------------------------------------------------------
-// Estrutura de seções permite renderização tipográfica consistente e futura
-// integração com índice (TOC) automático lateralmente.
+// --- Terms of Use -------------------------------------------------------------
+// Section structure enables consistent typography and a future auto-generated
+// table of contents without changes to the underlying data.
 export const termsContent: TermsContent = {
-  title: 'Termos de Uso',
+  title: 'Terms of Use',
   lastUpdated: '2026-01-15',
   intro:
-    'Ao utilizar a Nexora, você concorda com os termos descritos abaixo. Recomendamos a leitura atenta antes de cadastrar-se ou realizar qualquer compra na plataforma.',
+    "By using Nexora, you agree to the terms described below. Please read them carefully before signing up or making any purchase on the platform.",
   sections: [
     {
-      id: 'uso-da-plataforma',
-      title: '1. Uso da Plataforma',
-      body: 'A Nexora concede ao usuário uma licença pessoal, não exclusiva e intransferível para utilizar o site e seus serviços para fins lícitos. É proibido qualquer uso que viole leis vigentes, direitos de terceiros ou as boas práticas comerciais.',
+      id: 'platform-use',
+      title: '1. Platform Use',
+      body: 'Nexora grants users a personal, non-exclusive, and non-transferable license to use the site and its services for lawful purposes. Any use that violates current laws, third-party rights, or commercial best practices is prohibited.',
     },
     {
-      id: 'responsabilidade-do-usuario',
-      title: '2. Responsabilidade do Usuário',
-      body: 'O usuário é responsável pela veracidade dos dados informados no cadastro, pela guarda das credenciais de acesso e por todas as ações realizadas em sua conta. Compradores e vendedores devem manter conduta respeitosa nas comunicações dentro da plataforma.',
+      id: 'user-responsibility',
+      title: '2. User Responsibility',
+      body: 'Users are responsible for the accuracy of the information provided at registration, for safeguarding their access credentials, and for all actions taken under their account. Buyers and sellers must maintain respectful communication on the platform.',
     },
     {
-      id: 'politica-de-vendas',
-      title: '3. Política de Vendas',
-      body: 'Vendedores devem oferecer produtos lícitos, descrever fielmente as características, manter o estoque atualizado e cumprir os prazos estabelecidos. A Nexora pode suspender anúncios que violem estas regras ou recebam reclamações reiteradas.',
+      id: 'sales-policy',
+      title: '3. Sales Policy',
+      body: 'Sellers must offer lawful products, describe their characteristics accurately, keep stock up to date, and meet established deadlines. Nexora may suspend listings that violate these rules or receive repeated complaints.',
     },
     {
-      id: 'politica-de-entrega',
-      title: '4. Política de Entrega',
-      body: 'O prazo de entrega exibido no checkout considera o tempo de preparação do vendedor somado ao prazo da transportadora selecionada. Atrasos eventuais devem ser reportados via canal de atendimento e serão tratados conforme o Código de Defesa do Consumidor.',
+      id: 'delivery-policy',
+      title: '4. Delivery Policy',
+      body: 'The delivery window shown at checkout combines the seller\'s preparation time with the selected carrier\'s estimated transit time. Any delays should be reported to support and will be handled in line with consumer protection regulations.',
     },
     {
-      id: 'politica-de-cancelamento',
-      title: '5. Política de Cancelamento e Devolução',
-      body: 'O comprador tem direito ao arrependimento em até 7 dias corridos após o recebimento, conforme o art. 49 do CDC. Cancelamentos antes do envio podem ser solicitados diretamente no painel "Meus Pedidos" sem custo adicional.',
+      id: 'cancellation-policy',
+      title: '5. Cancellation and Return Policy',
+      body: 'Buyers may withdraw from a purchase within 7 calendar days of receiving the product. Cancellations before shipment can be requested directly from the "My Orders" panel at no extra cost.',
     },
     {
-      id: 'privacidade',
-      title: '6. Privacidade e Proteção de Dados',
-      body: 'Coletamos e tratamos dados pessoais conforme a Lei Geral de Proteção de Dados (LGPD). As informações são utilizadas para processar pedidos, melhorar a experiência e cumprir obrigações legais — nunca são vendidas a terceiros.',
+      id: 'privacy',
+      title: '6. Privacy and Data Protection',
+      body: 'We collect and process personal data in accordance with applicable data protection laws. Information is used to process orders, improve the experience, and comply with legal obligations — it is never sold to third parties.',
     },
     {
-      id: 'alteracoes',
-      title: '7. Alterações dos Termos',
-      body: 'A Nexora pode atualizar estes termos a qualquer momento. Mudanças relevantes serão comunicadas por e-mail ou banner na plataforma com pelo menos 15 dias de antecedência.',
+      id: 'changes',
+      title: '7. Changes to the Terms',
+      body: 'Nexora may update these terms at any time. Material changes will be communicated by email or banner on the platform at least 15 days in advance.',
     },
   ],
 };

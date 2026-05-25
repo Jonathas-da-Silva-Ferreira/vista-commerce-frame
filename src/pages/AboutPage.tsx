@@ -1,5 +1,4 @@
-// Página "Sobre Nós" — apresenta a empresa institucionalmente.
-// Conteúdo vem 100% da API (mockServer); o componente é puramente apresentacional.
+// "About Us" page — pure presentation; content comes from the API.
 
 import { useEffect } from 'react';
 import { useAbout } from '@/hooks/useInstitutional';
@@ -8,11 +7,11 @@ import InstitutionalLayout from '@/components/institutional/InstitutionalLayout'
 export default function AboutPage() {
   const { data, loading, error } = useAbout();
 
-  // SEO básico: título dinâmico por página. Em apps maiores, usar react-helmet
-  // ou similar para também controlar meta description/og:tags.
+  // Per-page title for SEO and tab clarity. For richer SEO control
+  // (description, OG tags) a helmet library would be added later.
   useEffect(() => {
     if (data) {
-      document.title = `Sobre — ${data.companyName}`;
+      document.title = `About — ${data.companyName}`;
     }
   }, [data]);
 
@@ -20,21 +19,20 @@ export default function AboutPage() {
     <InstitutionalLayout
       loading={loading}
       error={error}
-      eyebrow="Institucional"
-      title={data ? `Sobre a ${data.companyName}` : undefined}
+      eyebrow="About"
+      title={data ? `About ${data.companyName}` : undefined}
       subtitle={data?.tagline}
     >
       {data && (
         <>
-          {/* Lead paragraph — descrição introdutória com peso visual maior
-              para contextualizar o leitor antes das seções específicas. */}
+          {/* Lead paragraph carries heavier visual weight to orient the
+              reader before diving into the section-by-section content. */}
           <p className="text-lg text-foreground/90 leading-relaxed mb-10">
             {data.description}
           </p>
 
-          {/* Iteração sobre seções genéricas — adicionar/remover blocos no
-              backend NÃO requer mudança aqui. Esse é o ganho de modelar
-              o conteúdo como array de ContentSection. */}
+          {/* Iterating over generic sections means marketing can add/remove
+              blocks via the CMS without code changes here. */}
           <div className="space-y-10">
             {data.sections.map(section => (
               <section key={section.id} aria-labelledby={`section-${section.id}`}>

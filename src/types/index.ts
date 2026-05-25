@@ -15,12 +15,15 @@ export interface Product {
   sellerId?: string;
   isFeatured?: boolean;
   isPromotion?: boolean;
+  // Region-based shipping policy. The five regions match the country-wide
+  // distribution model the calculator uses; using fixed keys (not a Record)
+  // gives us compile-time guarantees on missing regions.
   shipping?: {
-    sul: number;
-    sudeste: number;
-    centroOeste: number;
-    norte: number;
-    nordeste: number;
+    south: number;
+    southeast: number;
+    centerWest: number;
+    north: number;
+    northeast: number;
   };
 }
 
@@ -55,8 +58,8 @@ export interface SearchFilters {
   sortBy?: 'price-asc' | 'price-desc' | 'rating' | 'newest';
 }
 
-// Centro de distribuição — cada um possui coordenadas geográficas
-// para cálculo de distância via Haversine até o cliente
+// Distribution center — each one carries its geographic coordinates so the
+// Haversine calculator can resolve the nearest warehouse for a buyer.
 export interface DistributionCenter {
   id: string;
   name: string;
@@ -66,8 +69,8 @@ export interface DistributionCenter {
   longitude: number;
 }
 
-// Resultado completo do cálculo de frete avançado —
-// inclui prazo, centro mais próximo e distância calculada
+// Result of the (simpler) shipping calculation: cost, ETA, nearest center,
+// and the raw distance for traceability.
 export interface ShippingResult {
   shippingCost: number;
   isFreeShipping: boolean;
@@ -76,58 +79,55 @@ export interface ShippingResult {
   distanceKm: number;
 }
 
-// Transportadora com multiplicador de distância —
-// permite escalar o custo base proporcionalmente à distância real
+// Carrier definition. The distance multiplier lets the cost scale with the
+// actual route length instead of being a flat rate.
 export interface Carrier {
   id: string;
   name: string;
   basePrice: number;
   distanceMultiplier: number;
   baseDays: number;
-  // Tag exibida ao lado da sugestão inteligente ("Mais barato", "Mais rápido", etc.)
   tag?: string;
 }
 
-// Opção calculada de frete para uma transportadora específica —
-// combina dados da Carrier com distância real para gerar preço/prazo finais
+// A computed shipping offer for a specific carrier. Combines static carrier
+// data with the realized distance to produce a final price/ETA pair.
 export interface ShippingOption {
   carrier: Carrier;
   cost: number;
   days: number;
   isFreeShipping: boolean;
-  // Recomendação inteligente baseada em custo-benefício
   recommendation?: 'cheapest' | 'fastest' | 'best-value';
 }
 
-// Resultado de frete por vendedor — agrupa opções de transportadora
-// com o centro de distribuição mais próximo do vendedor
+// Per-seller shipping result — multi-seller carts produce one of these per
+// seller because each seller may ship from a different warehouse.
 export interface SellerShippingResult {
   sellerId: string;
   sellerName: string;
   nearestCenter: DistributionCenter;
   distanceKm: number;
   options: ShippingOption[];
-  // Opção selecionada pelo usuário (default: melhor custo-benefício)
   selectedOptionId?: string;
 }
 
-// Avaliação de produto — modelo unificado para listagem e criação.
-// userId é mantido separado de userName para permitir bloqueio de duplicidade
-// (uma avaliação por usuário/produto) sem depender de string mutável (nome).
+// Product review. userId is kept distinct from userName so we can enforce the
+// "one review per user per product" rule against an immutable identifier
+// rather than a mutable display string.
 export interface Review {
   id: string;
   productId: string;
   userId: string;
   userName: string;
-  // Rating numérico 1-5; meia-estrela é exibida via média agregada,
-  // não permitida no input para simplificar UX e validação.
+  // 1..5 integer rating; half-stars only appear in the aggregate average,
+  // not in user input, so validation stays trivial.
   rating: number;
   comment: string;
-  createdAt: string; // ISO 8601 — facilita ordenação e formatação i18n
+  createdAt: string; // ISO 8601 — sortable lexicographically and locale-friendly.
 }
 
-// Resumo agregado retornado junto com a lista — evita recalcular no client
-// e mantém consistência caso a média seja ponderada no futuro.
+// Aggregate summary returned with the list so the client doesn't have to
+// recompute the average (and risk drifting if the backend changes the rule).
 export interface ReviewsSummary {
   reviews: Review[];
   average: number;
@@ -158,12 +158,10 @@ export interface Banner {
   buttonText?: string;
 }
 
-// --- Conteúdo institucional ---------------------------------------------------
-// Tipos modelados como "seções genéricas" (id/title/body) para permitir
-// adição/remoção de blocos sem mudança de schema. Evita interfaces "frágeis"
-// como { mission: string; vision: string; values: string } que exigiriam
-// migration toda vez que o time quiser um novo bloco.
-
+// --- Institutional content ----------------------------------------------------
+// Sections modeled as generic { id, title, body } so marketing can add/remove
+// blocks without schema migrations — much more resilient than locking in
+// specific fields like mission/vision/values.
 export interface ContentSection {
   id: string;
   title: string;
@@ -177,8 +175,8 @@ export interface AboutContent {
   sections: ContentSection[];
 }
 
-// Marco da timeline — year é string (não number) porque pode incluir
-// formatos como "2024 Q3" ou "Mar/2025" no futuro sem quebrar o tipo.
+// year is a string (not number) so the model can carry mixed formats like
+// "2024 Q3" or "Mar/2025" later without a breaking change.
 export interface HistoryMilestone {
   year: string;
   title: string;
@@ -193,8 +191,8 @@ export interface HistoryContent {
 
 export interface TermsContent {
   title: string;
-  // ISO 8601 — formatação de data fica a cargo do componente (Intl.DateTimeFormat),
-  // não do conteúdo, para respeitar o locale do usuário.
+  // ISO 8601 — formatting is the component's job (Intl.DateTimeFormat), not
+  // the content's, which keeps the API locale-agnostic.
   lastUpdated: string;
   intro: string;
   sections: ContentSection[];

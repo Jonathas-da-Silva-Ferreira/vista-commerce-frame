@@ -1,4 +1,4 @@
-// Página "Termos de Uso" — documento legal com seções numeradas.
+// "Terms of Use" page — long-form legal document with numbered sections.
 
 import { useEffect, useMemo } from 'react';
 import { useTerms } from '@/hooks/useInstitutional';
@@ -11,20 +11,20 @@ export default function TermsPage() {
     if (data) document.title = `${data.title} — Nexora`;
   }, [data]);
 
-  // Formatação de data feita NO COMPONENTE (não no conteúdo) — respeita
-  // o locale do navegador e mantém o conteúdo da API agnóstico de idioma.
-  // useMemo evita recriar o formatter a cada render.
+  // Format the "last updated" date in the component (not in the content)
+  // so the underlying API stays locale-agnostic. useMemo avoids rebuilding
+  // the formatter each render.
   const formattedDate = useMemo(() => {
     if (!data?.lastUpdated) return null;
     try {
-      return new Intl.DateTimeFormat('pt-BR', {
+      return new Intl.DateTimeFormat('en-US', {
         day: '2-digit',
         month: 'long',
         year: 'numeric',
       }).format(new Date(data.lastUpdated));
     } catch {
-      // Fallback defensivo: se a string vier malformada, exibe ela bruta
-      // ao invés de quebrar a página.
+      // Defensive fallback: render the raw value rather than crashing the
+      // whole page if the upstream date string is malformed.
       return data.lastUpdated;
     }
   }, [data?.lastUpdated]);
@@ -33,7 +33,7 @@ export default function TermsPage() {
     <InstitutionalLayout
       loading={loading}
       error={error}
-      eyebrow="Documento legal"
+      eyebrow="Legal document"
       title={data?.title}
       subtitle={
         data && (
@@ -41,7 +41,7 @@ export default function TermsPage() {
             {data.intro}
             {formattedDate && (
               <span className="block text-sm text-muted-foreground/80 mt-3">
-                Última atualização: {formattedDate}
+                Last updated: {formattedDate}
               </span>
             )}
           </>

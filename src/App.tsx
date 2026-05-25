@@ -23,6 +23,8 @@ import HistoryPage from "./pages/HistoryPage";
 import TermsPage from "./pages/TermsPage";
 import NotFound from "./pages/NotFound";
 
+// Providers are composed top-down so that downstream consumers (cart needs
+// auth context for example) always find their dependency mounted above them.
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -31,38 +33,37 @@ const App = () => (
       <AuthProvider>
         <CartProvider>
           <FavoritesProvider>
-          <LocationProvider>
-          <TooltipProvider>
-            <Toaster />
-            <Sonner />
-            <BrowserRouter>
-              <Routes>
-                <Route path="/" element={<HomePage />} />
-                <Route path="/produtos" element={<ProductsPage />} />
-                {/*
-                  Rota /categoria/:slug — alias semântico para ProductsPage.
-                  Mantemos /produtos?categoria=X como fonte única da listagem
-                  (ProductsPage já lê o slug e aplica filtros), mas expomos
-                  uma URL mais limpa e amigável para SEO/compartilhamento.
-                */}
-                <Route path="/categoria/:slug" element={<ProductsPage />} />
-                <Route path="/produto/:id" element={<ProductDetailPage />} />
-                <Route path="/carrinho" element={<CartPage />} />
-                <Route path="/favoritos" element={<FavoritesPage />} />
-                <Route path="/login" element={<LoginPage />} />
-                <Route path="/vender" element={<SellProductPage />} />
-                <Route path="/contato" element={<ContactPage />} />
-                <Route path="/logistica" element={<LogisticsDashboardPage />} />
-                {/* Rotas institucionais — páginas estáticas servidas via mock API */}
-                <Route path="/sobre" element={<AboutPage />} />
-                <Route path="/historia" element={<HistoryPage />} />
-                <Route path="/termos" element={<TermsPage />} />
-                {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-            </BrowserRouter>
-          </TooltipProvider>
-          </LocationProvider>
+            <LocationProvider>
+              <TooltipProvider>
+                <Toaster />
+                <Sonner />
+                <BrowserRouter>
+                  <Routes>
+                    <Route path="/" element={<HomePage />} />
+                    <Route path="/products" element={<ProductsPage />} />
+                    {/*
+                      /category/:slug is a semantic alias for the products
+                      listing — same component, prettier URL for SEO and
+                      sharing. Filters still resolve through ProductsPage.
+                    */}
+                    <Route path="/category/:slug" element={<ProductsPage />} />
+                    <Route path="/product/:id" element={<ProductDetailPage />} />
+                    <Route path="/cart" element={<CartPage />} />
+                    <Route path="/favorites" element={<FavoritesPage />} />
+                    <Route path="/login" element={<LoginPage />} />
+                    <Route path="/sell" element={<SellProductPage />} />
+                    <Route path="/contact" element={<ContactPage />} />
+                    <Route path="/logistics" element={<LogisticsDashboardPage />} />
+                    {/* Institutional pages served via the mock API */}
+                    <Route path="/about" element={<AboutPage />} />
+                    <Route path="/history" element={<HistoryPage />} />
+                    <Route path="/terms" element={<TermsPage />} />
+                    {/* Catch-all must stay last so explicit routes win the match */}
+                    <Route path="*" element={<NotFound />} />
+                  </Routes>
+                </BrowserRouter>
+              </TooltipProvider>
+            </LocationProvider>
           </FavoritesProvider>
         </CartProvider>
       </AuthProvider>

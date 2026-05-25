@@ -1,10 +1,11 @@
 /**
- * Simulated REST server that intercepts fetch calls when no backend is configured.
- * Mirrors real API contract so switching to a real backend requires only setting VITE_API_URL.
+ * Simulated REST server that intercepts fetch() when no backend is configured.
+ * Mirrors the real API contract so swapping to a real backend only requires
+ * setting VITE_API_URL — no call sites need to change.
  *
- * Decisão arquitetural: interceptar fetch() ao invés de usar MSW (Mock Service Worker)
- * para evitar dependência extra e simplificar setup — adequado para protótipos.
- * Em produção, migrar para MSW ou backend real.
+ * Why monkey-patch fetch instead of using MSW: fewer dependencies and zero
+ * setup, which is the right trade-off for a prototype. For production, swap
+ * this for MSW or a real backend.
  */
 import { products as initialProducts, categories } from '@/data/mockData';
 import { aboutContent, historyContent, termsContent } from '@/data/institutionalContent';
@@ -12,37 +13,37 @@ import type { Product, Banner, PaginatedResponse, DistributionCenter, Carrier, S
 
 const products: Product[] = [...initialProducts];
 
-// Store em memória de reviews — chave = productId para lookup O(1).
-// Em produção, substituir por tabela relacional com índice em (product_id, user_id)
-// para garantir constraint UNIQUE que previne reviews duplicadas no nível do banco.
+// In-memory reviews store — keyed by productId for O(1) lookup. In a real
+// backend this would be a relational table with a UNIQUE (product_id, user_id)
+// constraint to enforce "one review per user per product" at the DB level.
 const reviewsStore: Record<string, Review[]> = {};
 
 const delay = (ms = 150) => new Promise(r => setTimeout(r, ms));
 
-// Centros de distribuição estrategicamente posicionados nas 5 regiões —
-// garante que qualquer cliente no Brasil tenha um centro a menos de ~2000km
+// Distribution centers positioned across regions so any customer is within
+// roughly 2000km of at least one warehouse. (City names kept as-is since they
+// are proper nouns.)
 const distributionCenters: DistributionCenter[] = [
-  { id: 'cd-sp', name: 'CD São Paulo', city: 'São Paulo', state: 'SP', latitude: -23.55, longitude: -46.63 },
-  { id: 'cd-rj', name: 'CD Rio de Janeiro', city: 'Rio de Janeiro', state: 'RJ', latitude: -22.91, longitude: -43.17 },
-  { id: 'cd-pr', name: 'CD Curitiba', city: 'Curitiba', state: 'PR', latitude: -25.43, longitude: -49.27 },
-  { id: 'cd-df', name: 'CD Brasília', city: 'Brasília', state: 'DF', latitude: -15.78, longitude: -47.93 },
-  { id: 'cd-pe', name: 'CD Recife', city: 'Recife', state: 'PE', latitude: -8.05, longitude: -34.87 },
-  { id: 'cd-am', name: 'CD Manaus', city: 'Manaus', state: 'AM', latitude: -3.12, longitude: -60.02 },
+  { id: 'dc-sp', name: 'DC São Paulo', city: 'São Paulo', state: 'SP', latitude: -23.55, longitude: -46.63 },
+  { id: 'dc-rj', name: 'DC Rio de Janeiro', city: 'Rio de Janeiro', state: 'RJ', latitude: -22.91, longitude: -43.17 },
+  { id: 'dc-pr', name: 'DC Curitiba', city: 'Curitiba', state: 'PR', latitude: -25.43, longitude: -49.27 },
+  { id: 'dc-df', name: 'DC Brasília', city: 'Brasília', state: 'DF', latitude: -15.78, longitude: -47.93 },
+  { id: 'dc-pe', name: 'DC Recife', city: 'Recife', state: 'PE', latitude: -8.05, longitude: -34.87 },
+  { id: 'dc-am', name: 'DC Manaus', city: 'Manaus', state: 'AM', latitude: -3.12, longitude: -60.02 },
 ];
 
-// Transportadoras disponíveis — cada uma com perfil diferente de custo/prazo.
-// O multiplicador de distância escala o basePrice proporcionalmente à distância,
-// permitindo que rotas mais longas fiquem progressivamente mais caras.
+// Carriers with different cost/ETA profiles. The distance multiplier scales
+// base price by route length so longer trips cost progressively more.
 const carriers: Carrier[] = [
-  { id: 'economico', name: 'Econômico', basePrice: 5.90, distanceMultiplier: 0.008, baseDays: 8 },
-  { id: 'padrao', name: 'Padrão', basePrice: 9.90, distanceMultiplier: 0.012, baseDays: 5 },
-  { id: 'expresso', name: 'Expresso', basePrice: 18.90, distanceMultiplier: 0.02, baseDays: 2 },
+  { id: 'economy', name: 'Economy', basePrice: 5.90, distanceMultiplier: 0.008, baseDays: 8 },
+  { id: 'standard', name: 'Standard', basePrice: 9.90, distanceMultiplier: 0.012, baseDays: 5 },
+  { id: 'express', name: 'Express', basePrice: 18.90, distanceMultiplier: 0.02, baseDays: 2 },
 ];
 
 /**
- * Fórmula de Haversine — calcula distância entre dois pontos na superfície
- * terrestre usando coordenadas geográficas. Precisão suficiente para estimativa
- * de frete (~0.5% de erro vs Vincenty, mas 10x mais simples).
+ * Haversine distance — great-circle distance between two lat/lng points.
+ * Precision is sufficient for shipping estimates (~0.5% error vs Vincenty,
+ * but ~10x simpler).
  */
 function haversineDistance(
   lat1: number, lng1: number,
@@ -60,9 +61,6 @@ function haversineDistance(
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
-/**
- * Encontra o centro de distribuição mais próximo do cliente.
- */
 function findNearestCenter(lat: number, lng: number) {
   let nearest = distributionCenters[0];
   let minDist = Infinity;
@@ -79,30 +77,30 @@ function findNearestCenter(lat: number, lng: number) {
 }
 
 /**
- * Calcula opções de frete para cada transportadora com base na distância.
- * Preço final = basePrice + (distância × multiplicador).
- * Prazo estimado = baseDays + dias extras por faixa de distância.
+ * Build shipping options per carrier using distance.
+ * Final price = basePrice + distance * multiplier.
+ * ETA = baseDays + extra days based on distance bracket.
  */
 function calculateShippingOptions(distanceKm: number): ShippingOption[] {
-  // Dias extras baseados em faixa de distância — simula tempo real de trânsito
+  // Extra days bucketed by distance — a coarse simulation of transit time.
   const extraDays = distanceKm <= 300 ? 0 : distanceKm <= 800 ? 2 : 4;
 
   const options: ShippingOption[] = carriers.map(carrier => {
     const rawCost = carrier.basePrice + distanceKm * carrier.distanceMultiplier;
-    // Arredonda para 2 decimais — evita preços como R$ 19.9037
+    // Round to cents so we don't surface prices like 19.9037 to users.
     const cost = Math.round(rawCost * 100) / 100;
     const days = carrier.baseDays + extraDays;
     return { carrier, cost, days, isFreeShipping: false };
   });
 
-  // Ordena por custo para identificar mais barato e mais rápido
+  // Tag the cheapest and the fastest, then pick a "best value" option that
+  // balances both — score = cost * days.
   const sorted = [...options].sort((a, b) => a.cost - b.cost);
   sorted[0].recommendation = 'cheapest';
-  
+
   const fastest = [...options].sort((a, b) => a.days - b.days);
   fastest[0].recommendation = 'fastest';
 
-  // Melhor custo-benefício: score = custo × prazo — equilibra ambos fatores
   const bestValue = [...options].sort((a, b) => (a.cost * a.days) - (b.cost * b.days));
   if (!bestValue[0].recommendation) bestValue[0].recommendation = 'best-value';
 
@@ -110,7 +108,8 @@ function calculateShippingOptions(distanceKm: number): ShippingOption[] {
 }
 
 /**
- * Calcula custo legado baseado em faixa de distância (compatibilidade).
+ * Legacy distance-bracket cost — kept for the simpler /api/shipping/calculate
+ * endpoint that doesn't surface multi-carrier comparisons.
  */
 function calculateShippingByDistance(distanceKm: number) {
   if (distanceKm <= 300) return { cost: 9.90, days: 2 };
@@ -120,7 +119,8 @@ function calculateShippingByDistance(distanceKm: number) {
 
 type RouteHandler = (url: URL, init?: RequestInit) => Promise<Response>;
 
-// Helper para padronizar respostas JSON — centraliza headers e serialização
+// Single helper for JSON responses — keeps content-type and serialization
+// consistent across every handler.
 const json = (data: unknown, status = 200) =>
   new Response(JSON.stringify(data), {
     status,
@@ -128,15 +128,15 @@ const json = (data: unknown, status = 200) =>
   });
 
 const banners: Banner[] = [
-  { id: '1', title: 'Ofertas Imperdíveis', subtitle: 'Até 60% de desconto em eletrônicos', bgColor: 'hsl(220 70% 50%)', image: '/src/assets/banner-eletronicos.jpg', link: '/produtos?categoria=eletronicos', buttonText: 'Ver ofertas' },
-  { id: '2', title: 'Novidades em Moda', subtitle: 'Coleção Verão 2026 chegou!', bgColor: 'hsl(340 65% 47%)', image: '/src/assets/banner-moda.jpg', link: '/produtos?categoria=modas', buttonText: 'Comprar agora' },
-  { id: '3', title: 'Frete Grátis', subtitle: 'Em compras acima de R$ 199', bgColor: 'hsl(150 60% 35%)', image: '/src/assets/banner-frete.jpg', link: '/produtos', buttonText: 'Aproveitar' },
+  { id: '1', title: 'Unbeatable Deals', subtitle: 'Up to 60% off on electronics', bgColor: 'hsl(220 70% 50%)', image: '/src/assets/banner-eletronicos.jpg', link: '/products?category=electronics', buttonText: 'Shop deals' },
+  { id: '2', title: 'New in Fashion', subtitle: 'Summer 2026 collection is here!', bgColor: 'hsl(340 65% 47%)', image: '/src/assets/banner-moda.jpg', link: '/products?category=fashion', buttonText: 'Shop now' },
+  { id: '3', title: 'Free Shipping', subtitle: 'On purchases over $50', bgColor: 'hsl(150 60% 35%)', image: '/src/assets/banner-frete.jpg', link: '/products', buttonText: 'Get it' },
 ];
 
 const routes: Array<{ pattern: RegExp; handler: RouteHandler }> = [
-  // GET /api/products — listagem paginada com filtros
-  // Suporta múltiplos filtros combinados para permitir buscas complexas
-  // sem necessidade de endpoints separados para cada cenário
+  // GET /api/products — paginated listing with combined filters. Supporting
+  // multiple filters in one endpoint keeps the API surface small while
+  // covering every real-world listing scenario the UI needs.
   {
     pattern: /^\/api\/products$/,
     handler: async (url) => {
@@ -150,12 +150,12 @@ const routes: Array<{ pattern: RegExp; handler: RouteHandler }> = [
       const maxPrice = url.searchParams.get('maxPrice') ? Number(url.searchParams.get('maxPrice')) : undefined;
       const sortBy = url.searchParams.get('sortBy');
 
-      // Filtros especiais para páginas de categoria (Melhores Produtos, Promoção)
+      // Special filters used by curated landing pages (Best Products, Deals).
       const featured = url.searchParams.get('featured');
       const promotion = url.searchParams.get('promotion');
 
-      // Filtros aplicados sequencialmente — cada filtro reduz o dataset,
-      // ordem não importa pois são operações AND
+      // Filters applied sequentially — order doesn't matter because they're
+      // all AND'd; each pass narrows the dataset further.
       let filtered = [...products];
       if (featured === 'true') filtered = filtered.filter(p => p.isFeatured);
       if (promotion === 'true') filtered = filtered.filter(p => p.isPromotion);
@@ -168,7 +168,6 @@ const routes: Array<{ pattern: RegExp; handler: RouteHandler }> = [
       const minRating = url.searchParams.get('minRating') ? Number(url.searchParams.get('minRating')) : undefined;
       if (minRating !== undefined) filtered = filtered.filter(p => p.rating >= minRating);
 
-      // Sort in-place na cópia — não afeta array original
       if (sortBy) {
         switch (sortBy) {
           case 'price-asc': filtered.sort((a, b) => a.price - b.price); break;
@@ -177,8 +176,8 @@ const routes: Array<{ pattern: RegExp; handler: RouteHandler }> = [
         }
       }
 
-      // Paginação server-side simulada — frontend controla page/limit,
-      // hasMore indica se há mais páginas (útil para infinite scroll)
+      // Server-side pagination simulated — `hasMore` lets the UI build
+      // infinite-scroll experiences without an extra round trip.
       const start = (page - 1) * limit;
       const result: PaginatedResponse<Product> = {
         data: filtered.slice(start, start + limit),
@@ -190,8 +189,8 @@ const routes: Array<{ pattern: RegExp; handler: RouteHandler }> = [
       return json(result);
     },
   },
-  // Endpoints dedicados para featured/promotions — usados na home
-  // para evitar enviar filtros complexos em uma listagem simples
+  // Dedicated featured/promotions endpoints — used on the home page so we
+  // don't have to send heavyweight filter queries for a simple listing.
   {
     pattern: /^\/api\/products\/featured$/,
     handler: async () => {
@@ -206,7 +205,7 @@ const routes: Array<{ pattern: RegExp; handler: RouteHandler }> = [
       return json(products.filter(p => p.isPromotion));
     },
   },
-  // Produtos relacionados — filtra por mesma categoria excluindo o produto atual
+  // Related products — same category, excluding the current product.
   {
     pattern: /^\/api\/products\/related$/,
     handler: async (url) => {
@@ -217,7 +216,7 @@ const routes: Array<{ pattern: RegExp; handler: RouteHandler }> = [
       return json(products.filter(p => p.category === category && p.id !== exclude).slice(0, limit));
     },
   },
-  // GET /api/products/:id — detalhe do produto
+  // GET /api/products/:id — single product detail.
   {
     pattern: /^\/api\/products\/([^/?]+)$/,
     handler: async (url) => {
@@ -263,16 +262,16 @@ const routes: Array<{ pattern: RegExp; handler: RouteHandler }> = [
       );
     },
   },
-  // POST /api/products — cadastro de produto pelo vendedor
+  // POST /api/products — seller publishes a new product.
   {
     pattern: /^\/api\/products$/,
     handler: async (_url, init) => {
       if (init?.method !== 'POST') return json({ error: 'Method not allowed' }, 405);
       await delay(300);
       const body = JSON.parse((init?.body as string) || '{}');
-      // Frete padrão aplicado caso vendedor não defina —
-      // garante que todo produto tenha dados de frete válidos
-      const defaultShipping = { sul: 0, sudeste: 0, centroOeste: 0, norte: 25, nordeste: 20 };
+      // Fallback shipping policy so every product has a valid payload for the
+      // calculator regardless of what the seller filled out.
+      const defaultShipping = { south: 0, southeast: 0, centerWest: 0, north: 25, northeast: 20 };
       const newProduct: Product = {
         id: crypto.randomUUID(),
         name: body.name,
@@ -283,18 +282,19 @@ const routes: Array<{ pattern: RegExp; handler: RouteHandler }> = [
         subcategory: body.subcategory,
         rating: 0,
         reviewCount: 0,
-        seller: body.seller || 'Vendedor',
+        seller: body.seller || 'Seller',
         stock: Number(body.stock),
         sellerId: body.sellerId,
         shipping: body.shipping || defaultShipping,
       };
-      // unshift para produto novo aparecer primeiro na listagem —
-      // feedback visual imediato para o vendedor
+      // unshift so the new product is visible immediately at the top of the
+      // catalog — a small bit of feedback that confirms "yes, it published".
       products.unshift(newProduct);
       return json(newProduct, 201);
     },
   },
-  // PATCH estoque — decrementado no checkout para refletir venda
+  // PATCH /api/products/:id/stock — decrement called from checkout to reflect
+  // a completed sale.
   {
     pattern: /^\/api\/products\/([^/?]+)\/stock$/,
     handler: async (url, init) => {
@@ -305,21 +305,22 @@ const routes: Array<{ pattern: RegExp; handler: RouteHandler }> = [
       if (!product) return json({ error: 'Product not found' }, 404);
       const body = JSON.parse((init?.body as string) || '{}');
       const decrement = Number(body.quantity) || 1;
-      // Math.max(0) impede estoque negativo — regra de negócio crítica
+      // Math.max(0) guards against the stock ever becoming negative — a
+      // critical business invariant we don't trust the caller to enforce.
       product.stock = Math.max(0, product.stock - decrement);
       return json(product);
     },
   },
 
-  // GET /api/location — resolve CEP para estado/região
-  // Mapeamento simplificado pelo primeiro dígito do CEP —
-  // suficiente para mock, em produção usar API dos Correios ou ViaCEP
+  // GET /api/location — resolves a ZIP code into a state/region. The lookup
+  // is simplified by first digit; a real implementation would use a postal
+  // service API. Underlying postal-code format is Brazilian.
   {
     pattern: /^\/api\/location$/,
     handler: async (url) => {
       await delay(200);
       const cep = url.searchParams.get('cep')?.replace(/\D/g, '') || '';
-      if (cep.length !== 8) return json({ error: 'CEP inválido' }, 400);
+      if (cep.length !== 8) return json({ error: 'Invalid ZIP code' }, 400);
 
       const cepStateMap: Record<string, { state: string; city: string }> = {
         '0': { state: 'SP', city: 'São Paulo' }, '1': { state: 'SP', city: 'São Paulo' },
@@ -329,22 +330,23 @@ const routes: Array<{ pattern: RegExp; handler: RouteHandler }> = [
         '8': { state: 'PR', city: 'Curitiba' }, '9': { state: 'RS', city: 'Porto Alegre' },
       };
 
-      // Mapeamento estado → região segue divisão oficial do IBGE
+      // State → region map follows the same five-region partition used by
+      // the shipping calculator and the seller-side per-region pricing.
       const stateRegionMap: Record<string, string> = {
-        RS: 'Sul', SC: 'Sul', PR: 'Sul',
-        SP: 'Sudeste', RJ: 'Sudeste', MG: 'Sudeste', ES: 'Sudeste',
-        GO: 'Centro-Oeste', MT: 'Centro-Oeste', MS: 'Centro-Oeste', DF: 'Centro-Oeste',
-        AC: 'Norte', AP: 'Norte', AM: 'Norte', PA: 'Norte', RO: 'Norte', RR: 'Norte', TO: 'Norte',
-        AL: 'Nordeste', BA: 'Nordeste', CE: 'Nordeste', MA: 'Nordeste', PB: 'Nordeste',
-        PE: 'Nordeste', PI: 'Nordeste', RN: 'Nordeste', SE: 'Nordeste',
+        RS: 'South', SC: 'South', PR: 'South',
+        SP: 'Southeast', RJ: 'Southeast', MG: 'Southeast', ES: 'Southeast',
+        GO: 'Center-West', MT: 'Center-West', MS: 'Center-West', DF: 'Center-West',
+        AC: 'North', AP: 'North', AM: 'North', PA: 'North', RO: 'North', RR: 'North', TO: 'North',
+        AL: 'Northeast', BA: 'Northeast', CE: 'Northeast', MA: 'Northeast', PB: 'Northeast',
+        PE: 'Northeast', PI: 'Northeast', RN: 'Northeast', SE: 'Northeast',
       };
 
       const info = cepStateMap[cep[0]] || { state: 'SP', city: 'São Paulo' };
-      const region = stateRegionMap[info.state] || 'Sudeste';
+      const region = stateRegionMap[info.state] || 'Southeast';
       return json({ cep, state: info.state, city: info.city, region });
     },
   },
-  // GET /api/distribution-centers — lista de centros de distribuição
+  // GET /api/distribution-centers — list of warehouses for admin/debug UIs.
   {
     pattern: /^\/api\/distribution-centers$/,
     handler: async () => {
@@ -352,9 +354,9 @@ const routes: Array<{ pattern: RegExp; handler: RouteHandler }> = [
       return json(distributionCenters);
     },
   },
-  // POST /api/shipping/calculate — cálculo avançado de frete baseado em distância.
-  // Recebe coordenadas do cliente, encontra CD mais próximo via Haversine,
-  // e retorna custo + prazo baseado em faixas de distância.
+  // POST /api/shipping/calculate — distance-based shipping calculation.
+  // Takes the customer's coordinates, finds the nearest DC via Haversine,
+  // and returns cost + ETA bucketed by distance.
   {
     pattern: /^\/api\/shipping\/calculate$/,
     handler: async (_url, init) => {
@@ -364,19 +366,19 @@ const routes: Array<{ pattern: RegExp; handler: RouteHandler }> = [
 
       const { latitude, longitude } = body;
 
-      // Se coordenadas não foram enviadas, usa fallback por região (compatibilidade)
+      // Fallback if coordinates were not provided — keep the legacy region
+      // lookup working so older clients don't break.
       if (latitude == null || longitude == null) {
         const regionKey: Record<string, string> = {
-          'Sul': 'sul', 'Sudeste': 'sudeste', 'Centro-Oeste': 'centroOeste',
-          'Norte': 'norte', 'Nordeste': 'nordeste',
+          'South': 'south', 'Southeast': 'southeast', 'Center-West': 'centerWest',
+          'North': 'north', 'Northeast': 'northeast',
         };
-        const key = regionKey[body.region] || 'sudeste';
-        const defaultShipping: Record<string, number> = { sul: 0, sudeste: 0, centroOeste: 0, norte: 25, nordeste: 20 };
+        const key = regionKey[body.region] || 'southeast';
+        const defaultShipping: Record<string, number> = { south: 0, southeast: 0, centerWest: 0, north: 25, northeast: 20 };
         const cost = defaultShipping[key] ?? 0;
         return json({ shippingCost: cost, isFreeShipping: cost === 0, deliveryDays: 5, nearestCenter: distributionCenters[0], distanceKm: 0 });
       }
 
-      // Cálculo principal: encontra CD mais próximo e deriva custo/prazo
       const { center, distanceKm } = findNearestCenter(latitude, longitude);
       const { cost, days } = calculateShippingByDistance(distanceKm);
 
@@ -389,9 +391,9 @@ const routes: Array<{ pattern: RegExp; handler: RouteHandler }> = [
       });
     },
   },
-  // GET /api/shipping/options — retorna opções de todas as transportadoras
-  // para uma coordenada. Usado na página de produto e carrinho para o
-  // usuário escolher entre Econômico/Padrão/Expresso.
+  // POST /api/shipping/options — returns every carrier's offer for a given
+  // destination. Used on the product detail page and the cart so the buyer
+  // can pick between Economy / Standard / Express.
   {
     pattern: /^\/api\/shipping\/options$/,
     handler: async (_url, init) => {
@@ -399,13 +401,12 @@ const routes: Array<{ pattern: RegExp; handler: RouteHandler }> = [
       await delay(150);
       const body = JSON.parse((init?.body as string) || '{}');
       const { latitude, longitude } = body;
-      if (latitude == null || longitude == null) return json({ error: 'Coordenadas obrigatórias' }, 400);
+      if (latitude == null || longitude == null) return json({ error: 'Coordinates required' }, 400);
 
-      // Se recebeu array de sellers, calcula frete por vendedor separadamente
+      // When a sellers[] payload is provided, compute shipping per seller —
+      // each seller may resolve to a different nearest warehouse.
       const sellers: Array<{ sellerId: string; sellerName: string }> = body.sellers || [];
       if (sellers.length > 0) {
-        // Frete por vendedor — cada vendedor pode ter CD mais próximo diferente
-        // dependendo de sua localização de origem
         const results = sellers.map(s => {
           const { center, distanceKm } = findNearestCenter(latitude, longitude);
           const options = calculateShippingOptions(distanceKm);
@@ -414,13 +415,13 @@ const routes: Array<{ pattern: RegExp; handler: RouteHandler }> = [
         return json(results);
       }
 
-      // Cálculo simples para produto individual
+      // Single-product flow.
       const { center, distanceKm } = findNearestCenter(latitude, longitude);
       const options = calculateShippingOptions(distanceKm);
       return json({ nearestCenter: center, distanceKm, options });
     },
   },
-  // GET /api/logistics/dashboard — dados agregados para painel logístico
+  // GET /api/logistics/dashboard — aggregate metrics powering the admin panel.
   {
     pattern: /^\/api\/logistics\/dashboard$/,
     handler: async () => {
@@ -431,12 +432,13 @@ const routes: Array<{ pattern: RegExp; handler: RouteHandler }> = [
         avgShippingCost: 18.50,
         freeShippingRate: 0.35,
         regionBreakdown: {
-          Sudeste: 45, Sul: 22, Nordeste: 18, 'Centro-Oeste': 10, Norte: 5,
+          Southeast: 45, South: 22, Northeast: 18, 'Center-West': 10, North: 5,
         },
       });
     },
   },
-  // POST /api/contact — formulário de contato
+  // POST /api/contact — contact form submissions. Server returns 201 even on
+  // the mock so the success branch in the UI is exercised end to end.
   {
     pattern: /^\/api\/contact$/,
     handler: async (_url: URL, init?: RequestInit) => {
@@ -444,12 +446,12 @@ const routes: Array<{ pattern: RegExp; handler: RouteHandler }> = [
       await delay(300);
       const body = JSON.parse(init.body as string);
       console.debug('[MockServer] Contact received:', body);
-      return json({ success: true, message: 'Mensagem recebida com sucesso' }, 201);
+      return json({ success: true, message: 'Message received successfully' }, 201);
     },
   },
-  // GET/POST /api/products/:id/reviews — listagem e criação de avaliações.
-  // Endpoint aninhado mantém a relação produto→reviews explícita na URL,
-  // facilitando cache HTTP por produto e RLS no futuro backend.
+  // GET/POST /api/products/:id/reviews — nested endpoint keeps the
+  // product → reviews relationship explicit in the URL, which makes future
+  // HTTP caching per product and DB-level RLS straightforward.
   {
     pattern: /^\/api\/products\/([^/?]+)\/reviews$/,
     handler: async (url, init) => {
@@ -458,11 +460,10 @@ const routes: Array<{ pattern: RegExp; handler: RouteHandler }> = [
 
       if (!init || init.method === 'GET' || init.method === undefined) {
         await delay(150);
-        // Ordena do mais recente para o mais antigo — padrão de UX em reviews
-        // (usuário quer ver primeiro o que aconteceu por último).
+        // Newest first — the standard UX in reviews UIs.
         const sorted = [...list].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
-        // Média calculada no servidor para garantir consistência —
-        // evita divergência entre clients que possam arredondar diferente.
+        // Aggregate on the server to guarantee everyone sees the same number,
+        // regardless of client-side rounding differences.
         const average = sorted.length
           ? sorted.reduce((s, r) => s + r.rating, 0) / sorted.length
           : 0;
@@ -481,18 +482,19 @@ const routes: Array<{ pattern: RegExp; handler: RouteHandler }> = [
         const userId = String(body.userId || '');
         const userName = String(body.userName || '').trim();
 
-        // Validações de negócio centralizadas no handler — mantém contrato realístico
-        // mesmo com mock, para que o frontend não dependa de mocks "permissivos".
-        if (!userId || !userName) return json({ error: 'Usuário inválido' }, 401);
+        // Business validations centralized in the handler — keeps the mock
+        // strict so the frontend doesn't accidentally rely on permissive
+        // behavior that a real backend wouldn't allow.
+        if (!userId || !userName) return json({ error: 'Invalid user' }, 401);
         if (!Number.isInteger(rating) || rating < 1 || rating > 5) {
-          return json({ error: 'Nota deve ser um inteiro entre 1 e 5' }, 400);
+          return json({ error: 'Rating must be an integer between 1 and 5' }, 400);
         }
-        if (comment.length < 5) return json({ error: 'Comentário muito curto' }, 400);
+        if (comment.length < 5) return json({ error: 'Comment too short' }, 400);
 
-        // Regra: 1 review por usuário por produto. Status 409 (Conflict) é
-        // semanticamente correto para violação de unicidade.
+        // One review per user per product. 409 (Conflict) is the semantically
+        // correct status for a uniqueness violation.
         if (list.some(r => r.userId === userId)) {
-          return json({ error: 'Você já avaliou este produto.' }, 409);
+          return json({ error: "You've already reviewed this product." }, 409);
         }
 
         const review: Review = {
@@ -506,8 +508,8 @@ const routes: Array<{ pattern: RegExp; handler: RouteHandler }> = [
         };
         reviewsStore[id] = [...list, review];
 
-        // Atualiza rating/reviewCount do produto — mantém consistência com cards
-        // de produto que exibem esses campos sem refetch dos reviews.
+        // Update the product's aggregate fields so cards reflect the new
+        // review without needing to refetch the full product.
         const product = products.find(p => p.id === id);
         if (product) {
           const all = reviewsStore[id];
@@ -522,10 +524,9 @@ const routes: Array<{ pattern: RegExp; handler: RouteHandler }> = [
       return json({ error: 'Method not allowed' }, 405);
     },
   },
-  // --- Conteúdo institucional ------------------------------------------------
-  // Endpoints separados (não um único /institutional) para permitir cache HTTP
-  // independente — termos mudam raramente, "sobre" muda às vezes, e cada um
-  // pode ter TTL próprio quando migrar para backend real com CDN.
+  // --- Institutional content -------------------------------------------------
+  // Separate endpoints (not one /institutional bundle) so each document can
+  // have an independent cache TTL once a real CDN sits in front.
   {
     pattern: /^\/api\/institutional\/about$/,
     handler: async () => {
@@ -549,8 +550,7 @@ const routes: Array<{ pattern: RegExp; handler: RouteHandler }> = [
   },
 ];
 
-// Busca linear nas rotas — aceitável com poucos endpoints (~15),
-// em APIs maiores usar trie ou radix tree
+// Linear scan — acceptable for ~15 routes. Larger APIs would warrant a trie.
 function matchRoute(pathname: string): ((url: URL, init?: RequestInit) => Promise<Response>) | null {
   for (const route of routes) {
     if (route.pattern.test(pathname)) return route.handler;
@@ -559,9 +559,9 @@ function matchRoute(pathname: string): ((url: URL, init?: RequestInit) => Promis
 }
 
 /**
- * Instala interceptor de fetch para rotas /api/*.
- * Estratégia: monkey-patch do fetch global — simples e transparente para o código da app.
- * O frontend não sabe se está usando mock ou backend real.
+ * Installs the fetch interceptor for /api/* requests.
+ * Strategy: monkey-patch window.fetch — simple and transparent, the app code
+ * doesn't need to know whether it's talking to the mock or a real backend.
  */
 export function installMockServer() {
   const originalFetch = window.fetch.bind(window);
@@ -572,9 +572,8 @@ export function installMockServer() {
     if (url.pathname.startsWith('/api/')) {
       const handler = matchRoute(url.pathname);
       if (handler) {
-        // Para POST/PATCH, itera todas as rotas para encontrar handler
-        // que aceite o método — necessário porque GET e POST para /api/products
-        // compartilham o mesmo pattern regex
+        // GET and POST handlers share the same pattern for some endpoints,
+        // so for write methods we walk every match until one accepts the verb.
         if (init?.method === 'POST' || init?.method === 'PATCH') {
           for (const route of routes) {
             if (route.pattern.test(url.pathname)) {
@@ -591,7 +590,7 @@ export function installMockServer() {
       }
     }
 
-    // Requests fora de /api/ passam para o fetch original (assets, etc.)
+    // Non-API requests fall through to the real fetch (assets, images, etc.)
     return originalFetch(input, init);
   };
 

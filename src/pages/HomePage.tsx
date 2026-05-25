@@ -1,4 +1,3 @@
-import { useTranslation } from 'react-i18next';
 import MainLayout from '@/components/layout/MainLayout';
 import SearchBar from '@/components/SearchBar';
 import Banner from '@/components/Banner';
@@ -6,45 +5,37 @@ import CategoryGrid from '@/components/CategoryGrid';
 import { useCategories, useBanners } from '@/hooks/useApi';
 
 /**
- * HomePage — entrada principal do marketplace.
+ * HomePage — the marketplace entry point.
  *
- * Decisão de arquitetura:
- * Removemos as listas "Produtos em Destaque" e "Promoções" da home para
- * forçar a navegação por categorias (padrão de marketplaces reais como
- * Mercado Livre/Amazon). Isso reduz ruído visual, melhora performance
- * (menos requests na landing) e direciona o usuário ao funil correto.
- *
- * Promoções e Destaques continuam acessíveis, mas apenas como categorias
- * dedicadas (/produtos?categoria=promocao e ?categoria=melhores-produtos),
- * o que mantém a lógica de filtragem centralizada em ProductsPage e evita
- * duplicação de componentes de listagem.
+ * We deliberately keep this page lean (search, banner, categories). The
+ * featured/promotion lists were removed so users are funneled through the
+ * category navigation — the same pattern Amazon and similar marketplaces
+ * use. Less noise on the landing page → faster TTFB and clearer intent.
+ * Promotions and Best Products remain reachable as dedicated category
+ * routes, which keeps all filtering logic centralized in ProductsPage.
  */
 export default function HomePage() {
-  // useTranslation gives us reactive labels — changing locale re-renders
-  // the page without manual subscriptions.
-  const { t } = useTranslation();
-  // Apenas dados estritamente necessários para a home: categorias + banners.
-  // Hooks de produtos foram removidos intencionalmente para não disparar
-  // chamadas desnecessárias à API na landing.
+  // Only fetch what's strictly needed for the landing view — additional
+  // product calls would slow the LCP without paying off in conversion.
   const { categories } = useCategories();
   const { banners, loading: bannerLoading } = useBanners();
 
   return (
     <MainLayout>
       <div className="container mx-auto px-4 py-6 space-y-8">
-        {/* Busca em destaque: principal CTA para usuários com intenção definida */}
+        {/* Search is the primary CTA for users with strong intent */}
         <section>
           <SearchBar />
         </section>
 
-        {/* Banner promocional rotativo — único bloco "comercial" da home */}
+        {/* Rotating promotional banner — the only "commercial" block on home */}
         <section>
           <Banner banners={banners} loading={bannerLoading} />
         </section>
 
-        {/* Grid de categorias é o eixo central de navegação */}
+        {/* Category grid is the navigation backbone of the marketplace */}
         <section>
-          <h2 className="text-2xl font-bold mb-4">{t('home.categoriesTitle')}</h2>
+          <h2 className="text-2xl font-bold mb-4">Categories</h2>
           <CategoryGrid categories={categories} />
         </section>
       </div>

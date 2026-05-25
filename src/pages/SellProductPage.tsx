@@ -10,25 +10,17 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { categories } from '@/data/mockData';
-// Localize category/subcategory option labels so the seller form reflects
-// the active language without changing the underlying slug/value contracts.
-import { useCategoryLabel } from '@/hooks/useCategoryLabel';
-import { useSubcategoryLabel } from '@/hooks/useSubcategoryLabel';
 
-// Filtra categorias que possuem subcategorias —
-// categorias especiais (Promoção, Melhores Produtos) não devem aparecer no formulário
+// Filter out "special" categories (Deals, Best Products) — they're not real
+// taxonomy nodes, just dynamic listings, so sellers cannot publish into them.
 const categoryOptions = categories.filter(c => (c.subcategories?.length ?? 0) > 0);
 
 export default function SellProductPage() {
   const { user, isAuthenticated } = useAuth();
   const navigate = useNavigate();
-  // Estado separado para controlar loading do submit —
-  // previne duplo-clique e múltiplos cadastros acidentais
+  // Tracks the submit lifecycle so we can both disable the button and avoid
+  // accidental double-submits if the network is slow.
   const [isSubmitting, setIsSubmitting] = useState(false);
-  // Hooks subscribe to i18n changes, so option labels re-render on language switch.
-  const labelFor = useCategoryLabel();
-  const subLabelFor = useSubcategoryLabel();
-
 
   const [form, setForm] = useState({
     name: '',
@@ -39,22 +31,22 @@ export default function SellProductPage() {
     stock: '',
     image: '',
     sellerName: '',
-    // Valores padrão refletem política comercial: frete grátis nas regiões
-    // mais populosas (Sul/Sudeste/CO) e cobrado nas demais
-    shippingSul: '0',
-    shippingSudeste: '0',
-    shippingCentroOeste: '0',
-    shippingNorte: '25',
-    shippingNordeste: '20',
+    // Defaults encode the commercial policy: free shipping in the densest
+    // regions, modest fees elsewhere — sellers can override per row.
+    shippingSouth: '0',
+    shippingSoutheast: '0',
+    shippingCenterWest: '0',
+    shippingNorth: '25',
+    shippingNortheast: '20',
   });
 
-  // Deriva subcategorias da categoria selecionada —
-  // garante que o select de subcategoria sempre reflita opções válidas
+  // Derived list — never put this in state. Recomputing on every render is
+  // cheap and removes a whole class of "stale subcategory list" bugs.
   const selectedCategory = categoryOptions.find(c => c.slug === form.category);
   const subcategoryOptions = selectedCategory?.subcategories ?? [];
 
-  // Atualização genérica por campo — ao trocar categoria, reseta subcategoria
-  // para evitar estado inválido (subcategoria de outra categoria)
+  // Single setter that also resets `subcategory` when the parent category
+  // changes — prevents persisting a subcategory that no longer belongs.
   const updateField = (field: string, value: string) => {
     setForm(prev => ({
       ...prev,
@@ -63,8 +55,8 @@ export default function SellProductPage() {
     }));
   };
 
-  // Guard clause de autenticação renderizado antes do formulário —
-  // abordagem mais segura que redirect, pois mostra contexto ao usuário
+  // Render-time auth guard — clearer than a redirect because the user keeps
+  // visible context of the page they were trying to reach.
   if (!isAuthenticated) {
     return (
       <MainLayout>
@@ -73,13 +65,13 @@ export default function SellProductPage() {
             <div className="w-20 h-20 mx-auto rounded-full bg-muted flex items-center justify-center">
               <LogIn className="w-10 h-10 text-muted-foreground" />
             </div>
-            <h1 className="text-2xl font-bold">Acesso restrito</h1>
+            <h1 className="text-2xl font-bold">Restricted access</h1>
             <p className="text-muted-foreground">
-              Você precisa estar logado para vender produtos no Nexora.
+              You need to be signed in to sell products on Nexora.
             </p>
             <Button size="lg" onClick={() => navigate('/login')} className="gap-2">
               <LogIn className="w-4 h-4" />
-              Fazer login ou cadastrar
+              Sign in or register
             </Button>
           </div>
         </div>
@@ -90,19 +82,17 @@ export default function SellProductPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Validação client-side antes da chamada à API —
-    // reduz requests desnecessários e dá feedback imediato ao vendedor
     if (!form.name || !form.description || !form.category || !form.subcategory || !form.price || !form.stock || !form.image) {
-      toast.error('Preencha todos os campos obrigatórios.');
+      toast.error('Please fill out all required fields.');
       return;
     }
 
-    // Converte strings para números e valida —
-    // inputs type="number" retornam string no React, conversão explícita é necessária
+    // type="number" inputs still hand back strings in React; explicit parsing
+    // is required before we trust the values for arithmetic or validation.
     const price = parseFloat(form.price);
     const stock = parseInt(form.stock, 10);
-    if (isNaN(price) || price <= 0) { toast.error('Preço inválido.'); return; }
-    if (isNaN(stock) || stock < 1) { toast.error('Quantidade inválida.'); return; }
+    if (isNaN(price) || price <= 0) { toast.error('Invalid price.'); return; }
+    if (isNaN(stock) || stock < 1) { toast.error('Invalid quantity.'); return; }
 
     setIsSubmitting(true);
     try {
@@ -117,28 +107,25 @@ export default function SellProductPage() {
           price,
           stock,
           image: form.image.trim(),
-          // Fallback encadeado: nome da loja > nome do usuário > genérico
-          // Garante que todo produto tenha um vendedor visível
-          seller: form.sellerName.trim() || user?.name || 'Vendedor',
+          // Cascading fallback so every product always has a visible seller.
+          seller: form.sellerName.trim() || user?.name || 'Seller',
           sellerId: user?.id,
-          // Estrutura de frete por região — permite cálculo dinâmico
-          // baseado na localização do comprador
+          // Region-based shipping enables dynamic checkout pricing tied to
+          // the buyer's resolved location.
           shipping: {
-            sul: parseFloat(form.shippingSul) || 0,
-            sudeste: parseFloat(form.shippingSudeste) || 0,
-            centroOeste: parseFloat(form.shippingCentroOeste) || 0,
-            norte: parseFloat(form.shippingNorte) || 0,
-            nordeste: parseFloat(form.shippingNordeste) || 0,
+            south: parseFloat(form.shippingSouth) || 0,
+            southeast: parseFloat(form.shippingSoutheast) || 0,
+            centerWest: parseFloat(form.shippingCenterWest) || 0,
+            north: parseFloat(form.shippingNorth) || 0,
+            northeast: parseFloat(form.shippingNortheast) || 0,
           },
         }),
       });
-      if (!res.ok) throw new Error('Falha ao cadastrar produto');
-      toast.success('Produto cadastrado com sucesso!');
-      // Redireciona para listagem após cadastro — confirma visualmente
-      // que o produto foi adicionado ao catálogo
-      navigate('/produtos');
+      if (!res.ok) throw new Error('Failed to register product');
+      toast.success('Product published successfully!');
+      navigate('/products');
     } catch {
-      toast.error('Erro ao cadastrar produto. Tente novamente.');
+      toast.error('Could not publish the product. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -149,83 +136,81 @@ export default function SellProductPage() {
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-2xl mx-auto">
           <Button variant="ghost" className="mb-4 gap-2" onClick={() => navigate(-1)}>
-            <ArrowLeft className="w-4 h-4" /> Voltar
+            <ArrowLeft className="w-4 h-4" /> Back
           </Button>
 
           <div className="bg-card rounded-2xl p-6 md:p-8 shadow-card border border-border/50">
             <div className="mb-6">
-              <h1 className="text-2xl font-bold">Vender Produto</h1>
+              <h1 className="text-2xl font-bold">Sell a product</h1>
               <p className="text-muted-foreground mt-1">
-                Preencha os dados do produto que deseja vender
+                Fill out the details of the product you want to sell
               </p>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-5">
-              {/* Nome do produto */}
               <div className="space-y-2">
-                <Label htmlFor="name">Nome do produto *</Label>
+                <Label htmlFor="name">Product name *</Label>
                 <div className="relative">
                   <Package className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                  {/* maxLength=120 para limitar tamanho em cards e listagens */}
-                  <Input id="name" placeholder="Ex: Smartphone Ultra 5G" className="pl-10" value={form.name} onChange={e => updateField('name', e.target.value)} required maxLength={120} />
+                  {/* maxLength caps the value at a size that fits cleanly in
+                      cards and listings without truncating mid-sentence. */}
+                  <Input id="name" placeholder="e.g. Ultra 5G Smartphone" className="pl-10" value={form.name} onChange={e => updateField('name', e.target.value)} required maxLength={120} />
                 </div>
               </div>
 
-              {/* Descrição */}
               <div className="space-y-2">
-                <Label htmlFor="description">Descrição *</Label>
+                <Label htmlFor="description">Description *</Label>
                 <div className="relative">
                   <FileText className="absolute left-3 top-3 w-4 h-4 text-muted-foreground" />
-                  <Textarea id="description" placeholder="Descreva o produto detalhadamente..." className="pl-10 min-h-[100px]" value={form.description} onChange={e => updateField('description', e.target.value)} required maxLength={1000} />
+                  <Textarea id="description" placeholder="Describe the product in detail..." className="pl-10 min-h-[100px]" value={form.description} onChange={e => updateField('description', e.target.value)} required maxLength={1000} />
                 </div>
               </div>
 
-              {/* Categoria e Subcategoria — grid responsivo para aproveitar espaço horizontal */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label>Categoria *</Label>
+                  <Label>Category *</Label>
                   <Select value={form.category} onValueChange={v => updateField('category', v)}>
                     <SelectTrigger>
                       <Layers className="w-4 h-4 mr-2 text-muted-foreground" />
-                      <SelectValue placeholder="Selecione" />
+                      <SelectValue placeholder="Select" />
                     </SelectTrigger>
                     <SelectContent>
                       {categoryOptions.map(c => (
-                        <SelectItem key={c.id} value={c.slug}>{labelFor(c.slug, c.name)}</SelectItem>
+                        <SelectItem key={c.id} value={c.slug}>{c.name}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Subcategoria *</Label>
-                  {/* Desabilitado até selecionar categoria — previne seleção de subcategoria órfã */}
+                  <Label>Subcategory *</Label>
+                  {/* Disabled until a category is chosen — prevents the user
+                      from picking an orphan subcategory. */}
                   <Select value={form.subcategory} onValueChange={v => updateField('subcategory', v)} disabled={!form.category}>
                     <SelectTrigger>
-                      <SelectValue placeholder={form.category ? 'Selecione' : 'Escolha a categoria primeiro'} />
+                      <SelectValue placeholder={form.category ? 'Select' : 'Pick a category first'} />
                     </SelectTrigger>
                     <SelectContent>
                       {subcategoryOptions.map(s => (
-                        <SelectItem key={s} value={s}>{subLabelFor(s)}</SelectItem>
+                        <SelectItem key={s} value={s}>{s}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
               </div>
 
-              {/* Preço e Estoque */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="price">Preço (R$) *</Label>
+                  <Label htmlFor="price">Price (USD) *</Label>
                   <div className="relative">
                     <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                    {/* step=0.01 para permitir centavos; min=0.01 impede preço zero */}
-                    <Input id="price" type="number" step="0.01" min="0.01" placeholder="0,00" className="pl-10" value={form.price} onChange={e => updateField('price', e.target.value)} required />
+                    {/* step=0.01 permits cents; min=0.01 blocks zero-price listings. */}
+                    <Input id="price" type="number" step="0.01" min="0.01" placeholder="0.00" className="pl-10" value={form.price} onChange={e => updateField('price', e.target.value)} required />
                   </div>
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="stock">Quantidade em estoque *</Label>
+                  <Label htmlFor="stock">Quantity in stock *</Label>
                   <div className="relative">
                     <Hash className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                     <Input id="stock" type="number" min="1" placeholder="1" className="pl-10" value={form.stock} onChange={e => updateField('stock', e.target.value)} required />
@@ -233,14 +218,14 @@ export default function SellProductPage() {
                 </div>
               </div>
 
-              {/* Imagem — URL externa por enquanto; em produção, usar upload com storage */}
+              {/* URL input as a stop-gap — a real implementation would upload
+                  to object storage and store the resulting URL here instead. */}
               <div className="space-y-2">
-                <Label htmlFor="image">URL da imagem *</Label>
+                <Label htmlFor="image">Image URL *</Label>
                 <div className="relative">
                   <Image className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                  <Input id="image" type="url" placeholder="https://exemplo.com/imagem.jpg" className="pl-10" value={form.image} onChange={e => updateField('image', e.target.value)} required />
+                  <Input id="image" type="url" placeholder="https://example.com/image.jpg" className="pl-10" value={form.image} onChange={e => updateField('image', e.target.value)} required />
                 </div>
-                {/* Preview em tempo real — feedback visual imediato para o vendedor */}
                 {form.image && (
                   <div className="mt-2 rounded-lg overflow-hidden border border-border w-32 h-32">
                     <img src={form.image} alt="Preview" className="w-full h-full object-cover" onError={e => (e.currentTarget.style.display = 'none')} />
@@ -248,32 +233,29 @@ export default function SellProductPage() {
                 )}
               </div>
 
-              {/* Nome da loja — opcional, usa nome do usuário como fallback */}
               <div className="space-y-2">
-                <Label htmlFor="sellerName">Nome da loja / vendedor</Label>
+                <Label htmlFor="sellerName">Store / seller name</Label>
                 <div className="relative">
                   <Store className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                  <Input id="sellerName" placeholder={user?.name || 'Sua loja'} className="pl-10" value={form.sellerName} onChange={e => updateField('sellerName', e.target.value)} maxLength={60} />
+                  <Input id="sellerName" placeholder={user?.name || 'Your store'} className="pl-10" value={form.sellerName} onChange={e => updateField('sellerName', e.target.value)} maxLength={60} />
                 </div>
               </div>
 
-              {/* Frete por região — vendedor define custo por região do Brasil,
-                  permitindo estratégias como frete grátis em regiões próximas */}
+              {/* Per-region shipping lets sellers offer free shipping to nearby
+                  regions while charging realistic rates to far ones. */}
               <div className="space-y-3">
                 <div className="flex items-center gap-2">
                   <Truck className="w-4 h-4 text-primary" />
-                  <Label className="text-base font-semibold">Frete por região (R$)</Label>
+                  <Label className="text-base font-semibold">Shipping by region (USD)</Label>
                 </div>
-                <p className="text-xs text-muted-foreground">Defina o valor do frete para cada região. Use 0 para frete grátis.</p>
+                <p className="text-xs text-muted-foreground">Set the shipping cost per region. Use 0 for free shipping.</p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-                  {/* Array de configuração ao invés de 5 inputs duplicados —
-                      facilita adicionar/remover regiões sem tocar no JSX */}
                   {[
-                    { key: 'shippingSul', label: 'Sul (RS, SC, PR)' },
-                    { key: 'shippingSudeste', label: 'Sudeste (SP, RJ, MG, ES)' },
-                    { key: 'shippingCentroOeste', label: 'Centro-Oeste (GO, MT, MS, DF)' },
-                    { key: 'shippingNorte', label: 'Norte (AC, AP, AM, PA...)' },
-                    { key: 'shippingNordeste', label: 'Nordeste (BA, CE, PE...)' },
+                    { key: 'shippingSouth', label: 'South' },
+                    { key: 'shippingSoutheast', label: 'Southeast' },
+                    { key: 'shippingCenterWest', label: 'Center-West' },
+                    { key: 'shippingNorth', label: 'North' },
+                    { key: 'shippingNortheast', label: 'Northeast' },
                   ].map(({ key, label }) => (
                     <div key={key} className="space-y-1">
                       <Label htmlFor={key} className="text-xs">{label}</Label>
@@ -282,7 +264,7 @@ export default function SellProductPage() {
                         type="number"
                         step="0.01"
                         min="0"
-                        placeholder="0,00"
+                        placeholder="0.00"
                         className="h-9"
                         value={form[key as keyof typeof form]}
                         onChange={e => updateField(key, e.target.value)}
@@ -293,7 +275,7 @@ export default function SellProductPage() {
               </div>
 
               <Button type="submit" size="lg" className="w-full" disabled={isSubmitting}>
-                {isSubmitting ? 'Cadastrando...' : 'Cadastrar Produto'}
+                {isSubmitting ? 'Publishing...' : 'Publish product'}
               </Button>
             </form>
           </div>
