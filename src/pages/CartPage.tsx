@@ -423,8 +423,21 @@ export default function CartPage() {
                 onClick={handleCheckout}
                 disabled={!location}
               >
-                {location ? 'Checkout' : 'Enter your ZIP code'} <ArrowRight className="w-5 h-5 ml-2" />
+                {!location ? 'Enter your ZIP code' : isAuthenticated ? 'Checkout' : 'Sign in to checkout'}
+                {isAuthenticated || !location ? <ArrowRight className="w-5 h-5 ml-2" /> : <Lock className="w-4 h-4 ml-2" />}
               </Button>
+
+              {/* Inline guidance: state explicitly that auth is required so
+                  guests aren't surprised by the redirect when they click. */}
+              {!isAuthenticated && location && (
+                <p className="text-xs text-muted-foreground text-center flex items-center justify-center gap-1">
+                  <Lock className="w-3 h-3" />
+                  You need to sign in to complete your purchase.{' '}
+                  <Link to="/login" state={{ from: { pathname: '/checkout' } }} className="text-primary hover:underline font-medium">
+                    Login to continue
+                  </Link>
+                </p>
+              )}
 
               {!location && (
                 <p className="text-xs text-amber-600 text-center flex items-center justify-center gap-1">
