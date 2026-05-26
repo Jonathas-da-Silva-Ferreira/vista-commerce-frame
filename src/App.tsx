@@ -13,6 +13,7 @@ import HomePage from "./pages/HomePage";
 import ProductsPage from "./pages/ProductsPage";
 import ProductDetailPage from "./pages/ProductDetailPage";
 import CartPage from "./pages/CartPage";
+import CheckoutPage from "./pages/CheckoutPage";
 import FavoritesPage from "./pages/FavoritesPage";
 import LoginPage from "./pages/LoginPage";
 import SellProductPage from "./pages/SellProductPage";
@@ -22,6 +23,7 @@ import AboutPage from "./pages/AboutPage";
 import HistoryPage from "./pages/HistoryPage";
 import TermsPage from "./pages/TermsPage";
 import NotFound from "./pages/NotFound";
+import ProtectedRoute from "./components/ProtectedRoute";
 
 // Providers are composed top-down so that downstream consumers (cart needs
 // auth context for example) always find their dependency mounted above them.
@@ -49,6 +51,36 @@ const App = () => (
                     <Route path="/category/:slug" element={<ProductsPage />} />
                     <Route path="/product/:id" element={<ProductDetailPage />} />
                     <Route path="/cart" element={<CartPage />} />
+                    {/*
+                      Checkout, payment and orders are gated behind
+                      ProtectedRoute. The guard preserves the attempted URL
+                      in router state so LoginPage returns the user here
+                      after a successful sign-in (Amazon-style flow).
+                    */}
+                    <Route
+                      path="/checkout"
+                      element={
+                        <ProtectedRoute>
+                          <CheckoutPage />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/payment"
+                      element={
+                        <ProtectedRoute>
+                          <CheckoutPage />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/orders"
+                      element={
+                        <ProtectedRoute>
+                          <CheckoutPage />
+                        </ProtectedRoute>
+                      }
+                    />
                     <Route path="/favorites" element={<FavoritesPage />} />
                     <Route path="/login" element={<LoginPage />} />
                     <Route path="/sell" element={<SellProductPage />} />
