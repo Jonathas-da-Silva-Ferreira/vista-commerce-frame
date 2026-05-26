@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { Eye, EyeOff, Mail, Lock, User, UserX, ShoppingBag, Heart, Clock } from 'lucide-react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { Eye, EyeOff, Mail, Lock, User, UserX, ShoppingBag, Heart, Clock, AlertCircle } from 'lucide-react';
 import MainLayout from '@/components/layout/MainLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -12,6 +12,7 @@ import { useAuth } from '@/contexts/AuthContext';
 
 export default function LoginPage() {
   const navigate = useNavigate();
+  const routerLocation = useLocation();
   const { login, register: authRegister } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [loginData, setLoginData] = useState({ email: '', password: '' });
@@ -22,11 +23,17 @@ export default function LoginPage() {
     confirmPassword: '',
   });
 
+  // ProtectedRoute stashes the originally-requested location in router state.
+  // We read it once on render so a successful auth bounces the user back to
+  // the page they were trying to reach (e.g. /checkout) instead of "/".
+  const from = (routerLocation.state as { from?: { pathname: string } } | null)?.from?.pathname || '/';
+  const isRedirected = from !== '/';
+
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     login(loginData.email, loginData.password);
     toast.success('Signed in successfully!');
-    navigate('/');
+    navigate(from, { replace: true });
   };
 
   const handleRegister = (e: React.FormEvent) => {
@@ -43,11 +50,13 @@ export default function LoginPage() {
     }
     authRegister(registerData.name, registerData.email, registerData.password);
     toast.success('Account created successfully!');
-    navigate('/');
+    navigate(from, { replace: true });
   };
 
   const handleGuestContinue = () => {
     toast.info('Continuing as a guest');
+    // Guest path always lands on the homepage — guests can browse and add
+    // to cart, but cannot reach checkout (the route is protected).
     navigate('/');
   };
 
