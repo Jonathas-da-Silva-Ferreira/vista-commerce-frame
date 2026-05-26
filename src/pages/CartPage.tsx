@@ -1,11 +1,12 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Link } from 'react-router-dom';
-import { Trash2, Minus, Plus, ShoppingBag, ArrowRight, Truck, Zap, DollarSign, Award, MapPin, Loader2, Package, Clock, AlertCircle } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { Trash2, Minus, Plus, ShoppingBag, ArrowRight, Truck, Zap, DollarSign, Award, MapPin, Loader2, Package, Clock, AlertCircle, Lock } from 'lucide-react';
 import MainLayout from '@/components/layout/MainLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useCart } from '@/contexts/CartContext';
 import { useLocation } from '@/contexts/LocationContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { formatCurrency } from '@/lib/utils';
 import { toast } from 'sonner';
 import type { SellerShippingResult } from '@/types';
@@ -85,6 +86,8 @@ function CartZipInput() {
 export default function CartPage() {
   const { items, total, updateQuantity, removeItem, clearCart } = useCart();
   const { location } = useLocation();
+  const { isAuthenticated } = useAuth();
+  const navigate = useNavigate();
   const [sellerShipping, setSellerShipping] = useState<SellerShippingResult[]>([]);
   // Tracks the user's carrier choice per seller (sellerId → carrierId).
   const [selectedCarriers, setSelectedCarriers] = useState<Record<string, string>>({});
@@ -175,28 +178,23 @@ export default function CartPage() {
     }, 0);
   }, [sellerShipping, selectedCarriers]);
 
-  const handleCheckout = async () => {
+  const handleCheckout = () => {
     if (!location) {
       toast.error('Enter your ZIP code before checkout.');
       return;
     }
-    try {
-      // Decrement stock in parallel — these requests are independent and
-      // serializing them would make the perceived latency much worse.
-      await Promise.all(
-        items.map(item =>
-          fetch(`/api/products/${item.product.id}/stock`, {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ quantity: item.quantity }),
-          })
-        )
-      );
-      clearCart();
-      toast.success('Order placed successfully! Inventory updated.');
-    } catch {
-      toast.error('Could not complete checkout. Please try again.');
+    // Guests are redirected to /login with the intended destination in
+    // router state. ProtectedRoute would do the same on direct navigation,
+    // but doing it here gives us a smoother in-cart UX (toast + banner).
+    if (!isAuthenticated) {
+      toast.info('Please sign in to complete your purchase.');
+      navigate('/login', { state: { from: { pathname: '/checkout' } } });
+      return;
     }
+    // Authenticated path: hand off to the dedicated confirmation page.
+    // Keeping order finalization out of CartPage isolates payment logic
+    // from cart editing and makes the protected boundary explicit.
+    navigate('/checkout');
   };
 
   if (items.length === 0) {

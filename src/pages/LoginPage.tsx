@@ -70,6 +70,15 @@ export default function LoginPage() {
               <p className="text-muted-foreground mt-1">Sign in to your account or create a new one</p>
             </div>
 
+            {/* Surface why the user landed here when they were bounced from
+                a protected route — reduces drop-off at the auth wall. */}
+            {isRedirected && (
+              <div className="mb-5 flex items-start gap-2 rounded-lg border border-primary/30 bg-primary/5 p-3 text-sm">
+                <AlertCircle className="w-4 h-4 text-primary mt-0.5 shrink-0" />
+                <p>You need to sign in to complete your purchase. We'll bring you right back to checkout.</p>
+              </div>
+            )}
+
             <Tabs defaultValue="login" className="w-full">
               <TabsList className="grid w-full grid-cols-2 mb-6">
                 <TabsTrigger value="login">Sign in</TabsTrigger>
