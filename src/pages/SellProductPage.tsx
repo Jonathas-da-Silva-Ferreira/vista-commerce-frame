@@ -102,8 +102,24 @@ export default function SellProductPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!form.name || !form.description || !form.category || !form.subcategory || !form.price || !form.stock || !form.image) {
+    // Precedence rule: an uploaded asset always wins over a pasted URL.
+    // Rationale — the uploaded file came directly from the seller's device,
+    // so it's guaranteed to be reachable and won't 404 like a hot-linked URL.
+    const finalImage = form.uploadedImage || form.image.trim();
+
+    if (!form.name || !form.description || !form.category || !form.subcategory || !form.price || !form.stock) {
       toast.error('Please fill out all required fields.');
+      return;
+    }
+    if (!finalImage) {
+      toast.error('Provide an image: paste a URL or upload a file.');
+      return;
+    }
+    // Only validate the URL when the seller chose the URL path. If they
+    // uploaded a file, `finalImage` is a data URL and shouldn't go through
+    // http(s) URL parsing.
+    if (!form.uploadedImage && !isLikelyImageUrl(form.image.trim())) {
+      toast.error('The image URL is invalid.');
       return;
     }
 
