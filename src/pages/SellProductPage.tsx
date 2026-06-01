@@ -142,7 +142,7 @@ export default function SellProductPage() {
           subcategory: form.subcategory,
           price,
           stock,
-          image: form.image.trim(),
+          image: finalImage,
           // Cascading fallback so every product always has a visible seller.
           seller: form.sellerName.trim() || user?.name || 'Seller',
           sellerId: user?.id,
