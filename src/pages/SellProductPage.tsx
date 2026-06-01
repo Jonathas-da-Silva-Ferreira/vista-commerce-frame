@@ -254,20 +254,57 @@ export default function SellProductPage() {
                 </div>
               </div>
 
-              {/* URL input as a stop-gap — a real implementation would upload
-                  to object storage and store the resulting URL here instead. */}
-              <div className="space-y-2">
-                <Label htmlFor="image">Image URL *</Label>
-                <div className="relative">
-                  <Image className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                  <Input id="image" type="url" placeholder="https://example.com/image.jpg" className="pl-10" value={form.image} onChange={e => updateField('image', e.target.value)} required />
+              {/* Two-track image input. Sellers can either point at an already
+                  hosted asset (CDN, manufacturer page) OR upload from disk.
+                  Splitting them into clearly labeled sections — instead of a
+                  single ambiguous field — reduces confusion and matches the
+                  pattern used by Amazon Seller Central and Mercado Livre. */}
+              <div className="space-y-4 rounded-lg border border-border/60 p-4 bg-muted/20">
+                <div>
+                  <Label className="text-base font-semibold">Product image *</Label>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Choose whichever option is more convenient. If you provide both, the uploaded file will be used.
+                  </p>
                 </div>
-                {form.image && (
-                  <div className="mt-2 rounded-lg overflow-hidden border border-border w-32 h-32">
-                    <img src={form.image} alt="Preview" className="w-full h-full object-cover" onError={e => (e.currentTarget.style.display = 'none')} />
+
+                <div className="space-y-2">
+                  <Label htmlFor="image">Image URL</Label>
+                  <div className="relative">
+                    <ImageIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <Input
+                      id="image"
+                      type="url"
+                      placeholder="https://example.com/image.jpg"
+                      className="pl-10"
+                      value={form.image}
+                      onChange={e => updateField('image', e.target.value)}
+                      // Disabled once an uploaded file exists so the precedence
+                      // rule (upload wins) is visually obvious to the seller.
+                      disabled={!!form.uploadedImage}
+                    />
                   </div>
-                )}
+                  {form.image && !form.uploadedImage && (
+                    <ImagePreview src={form.image} className="w-32 h-32 mt-2" />
+                  )}
+                </div>
+
+                {/* Visual OR separator clarifies that the two options are
+                    alternatives, not additive steps. */}
+                <div className="flex items-center gap-3 text-xs uppercase tracking-wider text-muted-foreground">
+                  <div className="flex-1 h-px bg-border" />
+                  <span>or</span>
+                  <div className="flex-1 h-px bg-border" />
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Upload product image</Label>
+                  <ProductImageUploader
+                    value={form.uploadedImage}
+                    onChange={value => updateField('uploadedImage', value)}
+                  />
+                </div>
               </div>
+
 
               <div className="space-y-2">
                 <Label htmlFor="sellerName">Store / seller name</Label>
