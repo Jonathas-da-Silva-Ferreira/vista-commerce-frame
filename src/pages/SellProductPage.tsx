@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Package, DollarSign, Layers, Image, Store, Hash, FileText, ArrowLeft, LogIn, Truck } from 'lucide-react';
+import { Package, DollarSign, Layers, Image as ImageIcon, Store, Hash, FileText, ArrowLeft, LogIn, Truck } from 'lucide-react';
 import MainLayout from '@/components/layout/MainLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,6 +10,21 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { categories } from '@/data/mockData';
+import { ProductImageUploader } from '@/components/ProductImageUploader';
+import { ImagePreview } from '@/components/ImagePreview';
+
+// Lightweight URL validation. We don't fetch the resource (CORS + latency),
+// we just verify it parses as http(s) and looks like an image-bearing URL.
+// Catches obvious typos without blocking valid CDN URLs that lack extensions.
+const isLikelyImageUrl = (value: string): boolean => {
+  try {
+    const url = new URL(value);
+    if (!/^https?:$/.test(url.protocol)) return false;
+    return true;
+  } catch {
+    return false;
+  }
+};
 
 // Filter out "special" categories (Deals, Best Products) — they're not real
 // taxonomy nodes, just dynamic listings, so sellers cannot publish into them.
