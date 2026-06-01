@@ -44,7 +44,12 @@ export default function SellProductPage() {
     subcategory: '',
     price: '',
     stock: '',
+    // Two parallel slots: a remotely-hosted URL and a locally-uploaded asset.
+    // We keep them separate in form state so the seller can see/edit both,
+    // then collapse them into a single `image` field at submit time using a
+    // clear precedence rule (upload wins).
     image: '',
+    uploadedImage: '',
     sellerName: '',
     // Defaults encode the commercial policy: free shipping in the densest
     // regions, modest fees elsewhere — sellers can override per row.
