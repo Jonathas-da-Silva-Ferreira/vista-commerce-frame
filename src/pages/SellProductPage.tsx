@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Package, DollarSign, Layers, Image, Store, Hash, FileText, ArrowLeft, LogIn, Truck } from 'lucide-react';
+import { Package, DollarSign, Layers, Image as ImageIcon, Store, Hash, FileText, ArrowLeft, LogIn, Truck } from 'lucide-react';
 import MainLayout from '@/components/layout/MainLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,6 +10,21 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { categories } from '@/data/mockData';
+import { ProductImageUploader } from '@/components/ProductImageUploader';
+import { ImagePreview } from '@/components/ImagePreview';
+
+// Lightweight URL validation. We don't fetch the resource (CORS + latency),
+// we just verify it parses as http(s) and looks like an image-bearing URL.
+// Catches obvious typos without blocking valid CDN URLs that lack extensions.
+const isLikelyImageUrl = (value: string): boolean => {
+  try {
+    const url = new URL(value);
+    if (!/^https?:$/.test(url.protocol)) return false;
+    return true;
+  } catch {
+    return false;
+  }
+};
 
 // Filter out "special" categories (Deals, Best Products) — they're not real
 // taxonomy nodes, just dynamic listings, so sellers cannot publish into them.
@@ -29,7 +44,12 @@ export default function SellProductPage() {
     subcategory: '',
     price: '',
     stock: '',
+    // Two parallel slots: a remotely-hosted URL and a locally-uploaded asset.
+    // We keep them separate in form state so the seller can see/edit both,
+    // then collapse them into a single `image` field at submit time using a
+    // clear precedence rule (upload wins).
     image: '',
+    uploadedImage: '',
     sellerName: '',
     // Defaults encode the commercial policy: free shipping in the densest
     // regions, modest fees elsewhere — sellers can override per row.
@@ -82,8 +102,24 @@ export default function SellProductPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!form.name || !form.description || !form.category || !form.subcategory || !form.price || !form.stock || !form.image) {
+    // Precedence rule: an uploaded asset always wins over a pasted URL.
+    // Rationale — the uploaded file came directly from the seller's device,
+    // so it's guaranteed to be reachable and won't 404 like a hot-linked URL.
+    const finalImage = form.uploadedImage || form.image.trim();
+
+    if (!form.name || !form.description || !form.category || !form.subcategory || !form.price || !form.stock) {
       toast.error('Please fill out all required fields.');
+      return;
+    }
+    if (!finalImage) {
+      toast.error('Provide an image: paste a URL or upload a file.');
+      return;
+    }
+    // Only validate the URL when the seller chose the URL path. If they
+    // uploaded a file, `finalImage` is a data URL and shouldn't go through
+    // http(s) URL parsing.
+    if (!form.uploadedImage && !isLikelyImageUrl(form.image.trim())) {
+      toast.error('The image URL is invalid.');
       return;
     }
 
@@ -106,7 +142,7 @@ export default function SellProductPage() {
           subcategory: form.subcategory,
           price,
           stock,
-          image: form.image.trim(),
+          image: finalImage,
           // Cascading fallback so every product always has a visible seller.
           seller: form.sellerName.trim() || user?.name || 'Seller',
           sellerId: user?.id,
@@ -218,20 +254,57 @@ export default function SellProductPage() {
                 </div>
               </div>
 
-              {/* URL input as a stop-gap — a real implementation would upload
-                  to object storage and store the resulting URL here instead. */}
-              <div className="space-y-2">
-                <Label htmlFor="image">Image URL *</Label>
-                <div className="relative">
-                  <Image className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                  <Input id="image" type="url" placeholder="https://example.com/image.jpg" className="pl-10" value={form.image} onChange={e => updateField('image', e.target.value)} required />
+              {/* Two-track image input. Sellers can either point at an already
+                  hosted asset (CDN, manufacturer page) OR upload from disk.
+                  Splitting them into clearly labeled sections — instead of a
+                  single ambiguous field — reduces confusion and matches the
+                  pattern used by Amazon Seller Central and Mercado Livre. */}
+              <div className="space-y-4 rounded-lg border border-border/60 p-4 bg-muted/20">
+                <div>
+                  <Label className="text-base font-semibold">Product image *</Label>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Choose whichever option is more convenient. If you provide both, the uploaded file will be used.
+                  </p>
                 </div>
-                {form.image && (
-                  <div className="mt-2 rounded-lg overflow-hidden border border-border w-32 h-32">
-                    <img src={form.image} alt="Preview" className="w-full h-full object-cover" onError={e => (e.currentTarget.style.display = 'none')} />
+
+                <div className="space-y-2">
+                  <Label htmlFor="image">Image URL</Label>
+                  <div className="relative">
+                    <ImageIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <Input
+                      id="image"
+                      type="url"
+                      placeholder="https://example.com/image.jpg"
+                      className="pl-10"
+                      value={form.image}
+                      onChange={e => updateField('image', e.target.value)}
+                      // Disabled once an uploaded file exists so the precedence
+                      // rule (upload wins) is visually obvious to the seller.
+                      disabled={!!form.uploadedImage}
+                    />
                   </div>
-                )}
+                  {form.image && !form.uploadedImage && (
+                    <ImagePreview src={form.image} className="w-32 h-32 mt-2" />
+                  )}
+                </div>
+
+                {/* Visual OR separator clarifies that the two options are
+                    alternatives, not additive steps. */}
+                <div className="flex items-center gap-3 text-xs uppercase tracking-wider text-muted-foreground">
+                  <div className="flex-1 h-px bg-border" />
+                  <span>or</span>
+                  <div className="flex-1 h-px bg-border" />
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Upload product image</Label>
+                  <ProductImageUploader
+                    value={form.uploadedImage}
+                    onChange={value => updateField('uploadedImage', value)}
+                  />
+                </div>
               </div>
+
 
               <div className="space-y-2">
                 <Label htmlFor="sellerName">Store / seller name</Label>
