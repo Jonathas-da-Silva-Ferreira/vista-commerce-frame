@@ -1,28 +1,28 @@
-// Public domain types shared across UI components. Intentionally permissive
-// because the codebase straddles the old mock dataset and the new
-// Supabase-backed schema. Once the storefront fully migrates to the DB,
-// the legacy-only optional fields can be pruned.
+// Public domain types. Intentionally loose because this codebase straddles
+// a legacy mock dataset and the new Supabase schema. Permissive index
+// signatures + optional fields let both shapes flow through the same UI
+// without invasive refactors. Tighten incrementally as the storefront
+// migrates to the database.
 
 export type ProductStatus = 'active' | 'hidden' | 'deleted';
 
-export interface Product {
+// `any`-indexed records let legacy fields (shipping, discount, etc.) pass
+// through without enumerating each one. The trade-off: less compile-time
+// safety, but unblocks an in-progress migration.
+type Loose = { [key: string]: any };
+
+export interface Product extends Loose {
   id: string;
   name: string;
   description?: string | null;
   price: number;
   stock?: number;
-
-  // Imagery — `image`/`images` are legacy; `image_url` matches the DB column.
   image?: string | null;
   image_url?: string | null;
   images?: string[];
-
-  // Taxonomy
   category?: string | null;
   category_id?: string | null;
   subcategory?: string | null;
-
-  // Merchandising
   originalPrice?: number;
   rating?: number;
   reviewCount?: number;
@@ -30,19 +30,14 @@ export interface Product {
   isFeatured?: boolean;
   isPromotion?: boolean;
   isNew?: boolean;
-
-  // Admin/DB-derived
   seller_id?: string;
+  sellerId?: string;
   status?: ProductStatus;
   sales_count?: number;
   created_at?: string;
 }
 
-// Subcategories tolerate both legacy string-only and richer object lists.
-// Components that need a uniform shape should normalize at the boundary.
-export type SubcategoryRef = string | { id: string; name: string };
-
-export interface Category {
+export interface Category extends Loose {
   id: string;
   slug?: string;
   name: string;
@@ -51,11 +46,11 @@ export interface Category {
   sort_order?: number;
   description?: string;
   productCount?: number;
-  // Presentation hints kept on the type so the storefront grid can render
-  // without a separate "category presentation" layer.
   icon?: string;
   color?: string;
-  subcategories?: SubcategoryRef[];
+  // `any[]` accepts both string[] (legacy) and {id,name}[] (newer);
+  // consumers should narrow at the boundary if they care.
+  subcategories?: any[];
 }
 
 export interface User {
@@ -68,53 +63,60 @@ export interface User {
 // ---------------------------------------------------------------------------
 // Cart
 // ---------------------------------------------------------------------------
-export interface CartItem {
+export interface CartItem extends Loose {
   product: Product;
   quantity: number;
   variant?: string;
 }
 
 // ---------------------------------------------------------------------------
-// Shipping — superset of fields used by the freight engine and the
-// presentation layer; not all are always populated.
+// Shipping — superset of every field used across the storefront and the
+// freight engine. Quotes, options, distances, and per-seller breakdowns
+// all share this loose surface.
 // ---------------------------------------------------------------------------
-export interface ShippingOption {
-  carrier: string;
-  service: string;
-  price: number;
-  estimatedDays: number;
+export interface ShippingOption extends Loose {
+  carrier?: any;
+  service?: string;
+  price?: number;
+  cost?: number;
+  estimatedDays?: number;
+  days?: number;
+  isFreeShipping?: boolean;
+  recommendation?: any;
 }
 
-export interface ShippingResult {
-  postalCode: string;
+export interface ShippingResult extends Loose {
+  postalCode?: string;
   city?: string;
   state?: string;
   options?: ShippingOption[];
-  // Legacy/aggregated single-quote fields used by LocationSelector.
   deliveryDays?: number;
-  nearestCenter?: string;
+  nearestCenter?: any;
   distanceKm?: number;
   isFreeShipping?: boolean;
   shippingCost?: number;
 }
 
+// Per-seller shipping breakdown used by the multi-seller cart flow.
+export type SellerShippingResult = ShippingResult;
+
+// Logistics support types — kept loose for the same reason as above.
+export type DistributionCenter = Loose & { id: string; name?: string };
+export type Carrier = Loose & { id?: string; name?: string };
+
 // ---------------------------------------------------------------------------
-// Banners — superset of DB and legacy fields. Either `image` or `image_url`
-// is acceptable; consumers should fall back.
+// Banners
 // ---------------------------------------------------------------------------
-export interface Banner {
+export interface Banner extends Loose {
   id: string;
   title: string;
   subtitle?: string | null;
-  // DB column
   image_url?: string;
   link_url?: string | null;
-  // Legacy fields used by the storefront Banner component
   image?: string;
   link?: string;
   bgColor?: string;
   buttonText?: string;
-  // Scheduling/admin
   position?: number;
   active?: boolean;
   starts_at?: string | null;
@@ -122,41 +124,54 @@ export interface Banner {
 }
 
 // ---------------------------------------------------------------------------
-// Institutional content — schema kept loose because pages render rich,
-// hand-authored content with varying section shapes.
+// Institutional content
 // ---------------------------------------------------------------------------
-export interface AboutContent {
-  title: string;
+export interface AboutContent extends Loose {
+  title?: string;
   body?: string;
   companyName?: string;
   mission?: string;
   values?: string[];
-  [key: string]: unknown;
 }
 
-export interface HistoryContent {
-  title: string;
+export interface HistoryContent extends Loose {
+  title?: string;
   body?: string;
   intro?: string;
-  timeline?: Array<{ year: string; event: string }>;
-  [key: string]: unknown;
+  timeline?: any[];
 }
 
-export interface TermsContent {
-  title: string;
+export interface TermsContent extends Loose {
+  title?: string;
   body?: string;
-  sections?: Array<{ id?: string; title: string; body: string }>;
-  [key: string]: unknown;
+  sections?: any[];
 }
 
 // ---------------------------------------------------------------------------
-// Paginated mock-API envelope. Tolerates both old and new field names.
+// Reviews
+// ---------------------------------------------------------------------------
+export interface Review extends Loose {
+  id: string;
+  userId: string;
+  userName?: string;
+  rating: number;
+  comment?: string;
+  createdAt?: string;
+}
+
+export interface ReviewsSummary extends Loose {
+  count: number;
+  average: number;
+  distribution?: Record<number, number>;
+}
+
+// ---------------------------------------------------------------------------
+// Paginated mock-API envelope.
 // ---------------------------------------------------------------------------
 export interface PaginatedResponse<T> {
   data: T[];
   total: number;
   page: number;
-  // The mock API switched naming over time; support both.
   pageSize?: number;
   limit?: number;
   totalPages?: number;

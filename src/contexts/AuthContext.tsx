@@ -11,6 +11,9 @@ export interface AuthUser {
   id: string;            // auth.users.id (UUID) — used as foreign key everywhere
   email: string;         // primary identifier shown in UI
   displayName: string;   // friendly label for headers/avatars
+  // `name` is a back-compat alias used by legacy storefront components.
+  // Kept in sync with displayName so refactor can be incremental.
+  name: string;
 }
 
 interface AuthContextType {
@@ -27,6 +30,8 @@ interface AuthContextType {
   signUp: (email: string, password: string, displayName: string) => Promise<{ error: string | null }>;
   signInWithGoogle: () => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
+  // `logout` is a back-compat alias for legacy callers (e.g. Header).
+  logout: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -34,12 +39,14 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 // Maps a Supabase auth user into the shape the rest of the app consumes.
 // Centralizing the mapping keeps the SDK type contained to this module.
 function toAppUser(u: SupaUser): AuthUser {
+  const displayName =
+    (u.user_metadata?.display_name as string | undefined) ??
+    (u.email ? u.email.split('@')[0] : 'User');
   return {
     id: u.id,
     email: u.email ?? '',
-    displayName:
-      (u.user_metadata?.display_name as string | undefined) ??
-      (u.email ? u.email.split('@')[0] : 'User'),
+    displayName,
+    name: displayName,
   };
 }
 
@@ -136,6 +143,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         signUp,
         signInWithGoogle,
         signOut,
+        // Alias kept so existing Header/menus continue to work unchanged.
+        logout: signOut,
       }}
     >
       {children}
