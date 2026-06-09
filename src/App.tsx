@@ -28,6 +28,13 @@ import ScrollToTop from "./components/ScrollToTop";
 import Header from "./components/layout/Header";
 import Footer from "./components/layout/Footer";
 
+// Admin panel pages. Lazy-loading is intentionally NOT used here yet
+// because the admin bundle is small and instant navigation matters more
+// than initial-bundle KB for the small admin audience.
+import AdminDashboardPage from "./pages/admin/AdminDashboardPage";
+import AdminProductsPage from "./pages/admin/AdminProductsPage";
+import AdminPlaceholderPage from "./pages/admin/AdminPlaceholderPage";
+
 // Providers are composed top-down so that downstream consumers (cart needs
 // auth context for example) always find their dependency mounted above them.
 //
@@ -65,14 +72,60 @@ const App = () => (
                     changes, which eliminates the white flash caused by the
                     full layout tree being torn down between pages.
                   */}
-                  <ScrollToTop />
-                  <div className="min-h-screen flex flex-col">
-                    <Header />
-                    <main className="flex-1">
-                      <Routes>
-                        <Route path="/" element={<HomePage />} />
-                        <Route path="/products" element={<ProductsPage />} />
-                        {/*
+                <ScrollToTop />
+                <Routes>
+                  {/*
+                    Admin routes render OUTSIDE the storefront shell so they
+                    own their own chrome (sidebar, header). They sit at the
+                    top of the <Routes> so the catch-all storefront layout
+                    below never claims them. Every admin route is gated by
+                    ProtectedRoute with requireRoles=['admin'] — the gate
+                    relies on RLS for true security, this is just UX.
+                  */}
+                  <Route path="/admin" element={<ProtectedRoute requireRoles={["admin"]}><AdminDashboardPage /></ProtectedRoute>} />
+                  <Route path="/admin/products" element={<ProtectedRoute requireRoles={["admin"]}><AdminProductsPage /></ProtectedRoute>} />
+                  <Route path="/admin/categories" element={<ProtectedRoute requireRoles={["admin"]}><AdminPlaceholderPage title="Category Management" /></ProtectedRoute>} />
+                  <Route path="/admin/banners" element={<ProtectedRoute requireRoles={["admin"]}><AdminPlaceholderPage title="Banner Management" /></ProtectedRoute>} />
+                  <Route path="/admin/orders" element={<ProtectedRoute requireRoles={["admin"]}><AdminPlaceholderPage title="Order Management" /></ProtectedRoute>} />
+                  <Route path="/admin/users" element={<ProtectedRoute requireRoles={["admin"]}><AdminPlaceholderPage title="User Management" /></ProtectedRoute>} />
+                  <Route path="/admin/sellers" element={<ProtectedRoute requireRoles={["admin"]}><AdminPlaceholderPage title="Seller Management" /></ProtectedRoute>} />
+
+                  {/*
+                    Storefront shell: Header + Footer mount ONCE so they
+                    don't unmount/remount between navigations. Only the
+                    <main> content swaps. Wrapping in a layout route would
+                    add another component layer for no real benefit here.
+                  */}
+                  <Route
+                    path="*"
+                    element={
+                      <div className="min-h-screen flex flex-col">
+                        <Header />
+                        <main className="flex-1">
+                          <Routes>
+                            <Route path="/" element={<HomePage />} />
+                            <Route path="/products" element={<ProductsPage />} />
+                            <Route path="/category/:slug" element={<ProductsPage />} />
+                            <Route path="/product/:id" element={<ProductDetailPage />} />
+                            <Route path="/cart" element={<CartPage />} />
+                            <Route path="/checkout" element={<ProtectedRoute><CheckoutPage /></ProtectedRoute>} />
+                            <Route path="/payment" element={<ProtectedRoute><CheckoutPage /></ProtectedRoute>} />
+                            <Route path="/orders" element={<ProtectedRoute><CheckoutPage /></ProtectedRoute>} />
+                            <Route path="/favorites" element={<FavoritesPage />} />
+                            <Route path="/login" element={<LoginPage />} />
+                            <Route path="/sell" element={<SellProductPage /></ProtectedRoute /></ProtectedRoute>} />
+                            <Route path="/contact" element={<ContactPage />} />
+                            <Route path="/logistics" element={<LogisticsDashboardPage />} />
+                            <Route path="/about" element={<AboutPage />} />
+                            <Route path="/history" element={<HistoryPage />} />
+                            <Route path="/terms" element={<TermsPage />} />
+                            <Route path="*" element={<NotFound />} />
+                          </Routes>
+                        </main>
+                        <Footer />
+                      </div>
+                    }
+                  />
                           /category/:slug is a semantic alias for the products
                           listing — same component, prettier URL for SEO and
                           sharing. Filters still resolve through ProductsPage.
