@@ -160,8 +160,12 @@ export interface Review extends Loose {
 }
 
 export interface ReviewsSummary extends Loose {
-  count: number;
-  average: number;
+  // All fields optional — different sources populate different shapes
+  // (count+average vs reviews+total). Consumers should pick what they need.
+  count?: number;
+  average?: number;
+  total?: number;
+  reviews?: any[];
   distribution?: Record<number, number>;
 }
 
