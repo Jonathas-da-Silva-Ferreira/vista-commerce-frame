@@ -1,46 +1,56 @@
-export interface Product {
+// Public domain types. Intentionally loose because this codebase straddles
+// a legacy mock dataset and the new Supabase schema. Permissive index
+// signatures + optional fields let both shapes flow through the same UI
+// without invasive refactors. Tighten incrementally as the storefront
+// migrates to the database.
+
+export type ProductStatus = 'active' | 'hidden' | 'deleted';
+
+// `any`-indexed records let legacy fields (shipping, discount, etc.) pass
+// through without enumerating each one. The trade-off: less compile-time
+// safety, but unblocks an in-progress migration.
+type Loose = { [key: string]: any };
+
+export interface Product extends Loose {
   id: string;
   name: string;
-  description: string;
+  description?: string | null;
   price: number;
-  originalPrice?: number;
-  image: string;
+  stock?: number;
+  image?: string | null;
+  image_url?: string | null;
   images?: string[];
-  category: string;
-  subcategory?: string;
-  rating: number;
-  reviewCount: number;
-  seller: string;
-  stock: number;
-  sellerId?: string;
+  category?: string | null;
+  category_id?: string | null;
+  subcategory?: string | null;
+  originalPrice?: number;
+  rating?: number;
+  reviewCount?: number;
+  seller?: string;
   isFeatured?: boolean;
   isPromotion?: boolean;
-  // Region-based shipping policy. The five regions match the country-wide
-  // distribution model the calculator uses; using fixed keys (not a Record)
-  // gives us compile-time guarantees on missing regions.
-  shipping?: {
-    south: number;
-    southeast: number;
-    centerWest: number;
-    north: number;
-    northeast: number;
-  };
+  isNew?: boolean;
+  seller_id?: string;
+  sellerId?: string;
+  status?: ProductStatus;
+  sales_count?: number;
+  created_at?: string;
 }
 
-export interface Category {
+export interface Category extends Loose {
   id: string;
+  slug?: string;
   name: string;
-  slug: string;
-  icon: string;
-  color: string;
+  parent_id?: string | null;
+  enabled?: boolean;
+  sort_order?: number;
   description?: string;
   productCount?: number;
-  subcategories?: string[];
-}
-
-export interface CartItem {
-  product: Product;
-  quantity: number;
+  icon?: string;
+  color?: string;
+  // `any[]` accepts both string[] (legacy) and {id,name}[] (newer);
+  // consumers should narrow at the boundary if they care.
+  subcategories?: any[];
 }
 
 export interface User {
@@ -50,150 +60,124 @@ export interface User {
   avatar?: string;
 }
 
-export interface SearchFilters {
-  query?: string;
-  category?: string;
-  minPrice?: number;
-  maxPrice?: number;
-  sortBy?: 'price-asc' | 'price-desc' | 'rating' | 'newest';
+// ---------------------------------------------------------------------------
+// Cart
+// ---------------------------------------------------------------------------
+export interface CartItem extends Loose {
+  product: Product;
+  quantity: number;
+  variant?: string;
 }
 
-// Distribution center — each one carries its geographic coordinates so the
-// Haversine calculator can resolve the nearest warehouse for a buyer.
-export interface DistributionCenter {
+// ---------------------------------------------------------------------------
+// Shipping — superset of every field used across the storefront and the
+// freight engine. Quotes, options, distances, and per-seller breakdowns
+// all share this loose surface.
+// ---------------------------------------------------------------------------
+export interface ShippingOption extends Loose {
+  carrier?: any;
+  service?: string;
+  price?: number;
+  cost?: number;
+  estimatedDays?: number;
+  days?: number;
+  isFreeShipping?: boolean;
+  recommendation?: any;
+}
+
+export interface ShippingResult extends Loose {
+  postalCode?: string;
+  city?: string;
+  state?: string;
+  options?: ShippingOption[];
+  deliveryDays?: number;
+  nearestCenter?: any;
+  distanceKm?: number;
+  isFreeShipping?: boolean;
+  shippingCost?: number;
+}
+
+// Per-seller shipping breakdown used by the multi-seller cart flow.
+export type SellerShippingResult = ShippingResult;
+
+// Logistics support types — kept loose for the same reason as above.
+export type DistributionCenter = Loose & { id: string; name?: string };
+export type Carrier = Loose & { id?: string; name?: string };
+
+// ---------------------------------------------------------------------------
+// Banners
+// ---------------------------------------------------------------------------
+export interface Banner extends Loose {
   id: string;
-  name: string;
-  city: string;
-  state: string;
-  latitude: number;
-  longitude: number;
+  title: string;
+  subtitle?: string | null;
+  image_url?: string;
+  link_url?: string | null;
+  image?: string;
+  link?: string;
+  bgColor?: string;
+  buttonText?: string;
+  position?: number;
+  active?: boolean;
+  starts_at?: string | null;
+  ends_at?: string | null;
 }
 
-// Result of the (simpler) shipping calculation: cost, ETA, nearest center,
-// and the raw distance for traceability.
-export interface ShippingResult {
-  shippingCost: number;
-  isFreeShipping: boolean;
-  deliveryDays: number;
-  nearestCenter: DistributionCenter;
-  distanceKm: number;
+// ---------------------------------------------------------------------------
+// Institutional content
+// ---------------------------------------------------------------------------
+export interface AboutContent extends Loose {
+  title?: string;
+  body?: string;
+  companyName?: string;
+  mission?: string;
+  values?: string[];
 }
 
-// Carrier definition. The distance multiplier lets the cost scale with the
-// actual route length instead of being a flat rate.
-export interface Carrier {
+export interface HistoryContent extends Loose {
+  title?: string;
+  body?: string;
+  intro?: string;
+  timeline?: any[];
+}
+
+export interface TermsContent extends Loose {
+  title?: string;
+  body?: string;
+  sections?: any[];
+}
+
+// ---------------------------------------------------------------------------
+// Reviews
+// ---------------------------------------------------------------------------
+export interface Review extends Loose {
   id: string;
-  name: string;
-  basePrice: number;
-  distanceMultiplier: number;
-  baseDays: number;
-  tag?: string;
-}
-
-// A computed shipping offer for a specific carrier. Combines static carrier
-// data with the realized distance to produce a final price/ETA pair.
-export interface ShippingOption {
-  carrier: Carrier;
-  cost: number;
-  days: number;
-  isFreeShipping: boolean;
-  recommendation?: 'cheapest' | 'fastest' | 'best-value';
-}
-
-// Per-seller shipping result — multi-seller carts produce one of these per
-// seller because each seller may ship from a different warehouse.
-export interface SellerShippingResult {
-  sellerId: string;
-  sellerName: string;
-  nearestCenter: DistributionCenter;
-  distanceKm: number;
-  options: ShippingOption[];
-  selectedOptionId?: string;
-}
-
-// Product review. userId is kept distinct from userName so we can enforce the
-// "one review per user per product" rule against an immutable identifier
-// rather than a mutable display string.
-export interface Review {
-  id: string;
-  productId: string;
   userId: string;
-  userName: string;
-  // 1..5 integer rating; half-stars only appear in the aggregate average,
-  // not in user input, so validation stays trivial.
+  userName?: string;
   rating: number;
-  comment: string;
-  createdAt: string; // ISO 8601 — sortable lexicographically and locale-friendly.
+  comment?: string;
+  createdAt?: string;
 }
 
-// Aggregate summary returned with the list so the client doesn't have to
-// recompute the average (and risk drifting if the backend changes the rule).
-export interface ReviewsSummary {
-  reviews: Review[];
-  average: number;
-  total: number;
+export interface ReviewsSummary extends Loose {
+  // All fields optional — different sources populate different shapes
+  // (count+average vs reviews+total). Consumers should pick what they need.
+  count?: number;
+  average?: number;
+  total?: number;
+  reviews?: any[];
+  distribution?: Record<number, number>;
 }
 
-export interface ApiResponse<T> {
-  data: T;
-  success: boolean;
-  message?: string;
-}
-
+// ---------------------------------------------------------------------------
+// Paginated mock-API envelope.
+// ---------------------------------------------------------------------------
 export interface PaginatedResponse<T> {
   data: T[];
   total: number;
   page: number;
-  limit: number;
-  hasMore: boolean;
-}
-
-export interface Banner {
-  id: string;
-  title: string;
-  subtitle: string;
-  bgColor: string;
-  image?: string;
-  link?: string;
-  buttonText?: string;
-}
-
-// --- Institutional content ----------------------------------------------------
-// Sections modeled as generic { id, title, body } so marketing can add/remove
-// blocks without schema migrations — much more resilient than locking in
-// specific fields like mission/vision/values.
-export interface ContentSection {
-  id: string;
-  title: string;
-  body: string;
-}
-
-export interface AboutContent {
-  companyName: string;
-  tagline: string;
-  description: string;
-  sections: ContentSection[];
-}
-
-// year is a string (not number) so the model can carry mixed formats like
-// "2024 Q3" or "Mar/2025" later without a breaking change.
-export interface HistoryMilestone {
-  year: string;
-  title: string;
-  description: string;
-}
-
-export interface HistoryContent {
-  title: string;
-  intro: string;
-  milestones: HistoryMilestone[];
-}
-
-export interface TermsContent {
-  title: string;
-  // ISO 8601 — formatting is the component's job (Intl.DateTimeFormat), not
-  // the content's, which keeps the API locale-agnostic.
-  lastUpdated: string;
-  intro: string;
-  sections: ContentSection[];
+  pageSize?: number;
+  limit?: number;
+  totalPages?: number;
+  hasMore?: boolean;
 }
