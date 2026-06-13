@@ -1,4 +1,7 @@
 import { createRoot } from "react-dom/client";
+// HelmetProvider must wrap the entire app so any <Helmet> inside a route
+// can safely register tags without "no provider" errors during SSR/CSR.
+import { HelmetProvider } from "react-helmet-async";
 import App from "./App.tsx";
 import "./index.css";
 
@@ -10,7 +13,14 @@ async function boot() {
     const { installMockServer } = await import("@/services/mockServer");
     installMockServer();
   }
-  createRoot(document.getElementById("root")!).render(<App />);
+  createRoot(document.getElementById("root")!).render(
+    // HelmetProvider lives OUTSIDE BrowserRouter (which is in App) — it has
+    // no dependency on routing context, so placing it at the top guarantees
+    // every page can override head tags per route.
+    <HelmetProvider>
+      <App />
+    </HelmetProvider>
+  );
 }
 
 boot();

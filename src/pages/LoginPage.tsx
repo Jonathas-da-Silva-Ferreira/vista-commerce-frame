@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Eye, EyeOff, Mail, Lock, User as UserIcon, UserX, AlertCircle, Loader2 } from 'lucide-react';
 import MainLayout from '@/components/layout/MainLayout';
+import SEO from '@/components/SEO';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -89,6 +90,9 @@ export default function LoginPage() {
 
   return (
     <MainLayout>
+      {/* noindex would be ideal here but per-route robots meta requires
+          extra plumbing; at minimum a unique title prevents duplication. */}
+      <SEO title="Sign in or create an account" description="Access your Nexora account to manage orders, favorites and seller listings." />
       <div className="container mx-auto px-4 py-12">
         <div className="max-w-md mx-auto space-y-6">
           <div className="bg-card rounded-2xl p-6 md:p-8 shadow-card border border-border/50">

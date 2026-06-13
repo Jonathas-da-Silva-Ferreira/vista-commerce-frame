@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { ChevronRight, Heart, Star, Minus, Plus, ShoppingCart, Truck, Shield, RotateCcw, CheckCircle2, Loader2, Zap, DollarSign, Award } from 'lucide-react';
 import MainLayout from '@/components/layout/MainLayout';
 import ProductGrid from '@/components/ProductGrid';
+import SEO from '@/components/SEO';
 import { Button } from '@/components/ui/button';
 import { useCart } from '@/contexts/CartContext';
 import { useFavorites } from '@/contexts/FavoritesContext';
@@ -240,6 +241,14 @@ export default function ProductDetailPage() {
 
   return (
     <MainLayout>
+      {/* Per-product SEO: title + description derived from the product so
+          each listing has a unique, keyword-rich snippet in search results.
+          ogType="product" hints richer cards to platforms that support it. */}
+      <SEO
+        title={product.name}
+        description={(product.description || `Buy ${product.name} on Nexora.`).slice(0, 155)}
+        ogType="product"
+      />
       <div className="container mx-auto px-4 py-6">
         <nav className="flex items-center gap-2 text-sm text-muted-foreground mb-6 flex-wrap">
           <Link to="/" className="hover:text-foreground transition-colors">Home</Link>
@@ -314,11 +323,14 @@ export default function ProductDetailPage() {
               <div className="flex items-center gap-4">
                 <span className="font-medium">Quantity:</span>
                 <div className="flex items-center gap-2">
-                  <Button variant="outline" size="icon" onClick={() => setQuantity(Math.max(1, quantity - 1))} disabled={quantity <= 1}>
+                  {/* aria-labels make icon-only +/- discoverable to screen
+                      readers; the visible number between them stays as the
+                      single source of truth for the current quantity. */}
+                  <Button variant="outline" size="icon" onClick={() => setQuantity(Math.max(1, quantity - 1))} disabled={quantity <= 1} aria-label="Decrease quantity">
                     <Minus className="w-4 h-4" />
                   </Button>
-                  <span className="w-12 text-center font-semibold text-lg">{quantity}</span>
-                  <Button variant="outline" size="icon" onClick={() => setQuantity(Math.min(product.stock, quantity + 1))} disabled={quantity >= product.stock}>
+                  <span className="w-12 text-center font-semibold text-lg" aria-live="polite">{quantity}</span>
+                  <Button variant="outline" size="icon" onClick={() => setQuantity(Math.min(product.stock, quantity + 1))} disabled={quantity >= product.stock} aria-label="Increase quantity">
                     <Plus className="w-4 h-4" />
                   </Button>
                 </div>
@@ -335,11 +347,17 @@ export default function ProductDetailPage() {
                   <ShoppingCart className="w-5 h-5 mr-2" />
                   {isInCart(product.id) ? 'Update cart' : 'Add to cart'}
                 </Button>
+                {/* Icon-only buttons need an explicit accessible name so
+                    screen readers announce the action. The label flips with
+                    state so users know whether they are adding or removing
+                    the product from their wishlist. */}
                 <Button
                   variant="outline"
                   size="lg"
                   className={`h-12 w-12 ${isFavorite(product.id) ? 'text-destructive border-destructive hover:bg-destructive/10' : ''}`}
                   onClick={() => toggleFavorite(product)}
+                  aria-label={isFavorite(product.id) ? `Remove ${product.name} from favorites` : `Add ${product.name} to favorites`}
+                  aria-pressed={isFavorite(product.id)}
                 >
                   <Heart className={`w-5 h-5 ${isFavorite(product.id) ? 'fill-destructive' : ''}`} />
                 </Button>

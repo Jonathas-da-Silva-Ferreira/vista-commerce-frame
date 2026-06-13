@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Package, DollarSign, Layers, Image as ImageIcon, Store, Hash, FileText, ArrowLeft, LogIn, Truck } from 'lucide-react';
 import MainLayout from '@/components/layout/MainLayout';
+import SEO from '@/components/SEO';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -80,6 +81,7 @@ export default function SellProductPage() {
   if (!isAuthenticated) {
     return (
       <MainLayout>
+        <SEO title="Sell on Nexora" description="List your products on Nexora and reach thousands of buyers across the marketplace." />
         <div className="container mx-auto px-4 py-20">
           <div className="max-w-md mx-auto text-center space-y-6">
             <div className="w-20 h-20 mx-auto rounded-full bg-muted flex items-center justify-center">
@@ -169,6 +171,7 @@ export default function SellProductPage() {
 
   return (
     <MainLayout>
+      <SEO title="Sell on Nexora" description="List your products on Nexora and reach thousands of buyers across the marketplace." />
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-2xl mx-auto">
           <Button variant="ghost" className="mb-4 gap-2" onClick={() => navigate(-1)}>

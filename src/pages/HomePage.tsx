@@ -2,6 +2,7 @@ import MainLayout from '@/components/layout/MainLayout';
 import SearchBar from '@/components/SearchBar';
 import Banner from '@/components/Banner';
 import CategoryGrid from '@/components/CategoryGrid';
+import SEO from '@/components/SEO';
 import { useCategories, useBanners } from '@/hooks/useApi';
 
 /**
@@ -22,20 +23,36 @@ export default function HomePage() {
 
   return (
     <MainLayout>
+      {/* Per-route SEO: unique title/description/canonical for the homepage.
+          Without this, every route would inherit the same static <title>
+          from index.html and search engines would flag duplicate metadata. */}
+      <SEO
+        title="Your modern online marketplace"
+        description="Shop electronics, fashion, home and more on Nexora. Compare carriers, track shipping by ZIP and check out securely."
+        canonicalPath="/"
+      />
       <div className="container mx-auto px-4 py-6 space-y-8">
+        {/*
+          A single, descriptive H1 is required for both SEO and screen-reader
+          navigation. We use sr-only so the visual hero (the banner below)
+          isn't disrupted, but assistive tech and crawlers still get a clear
+          page topic. This is preferable to leaving the page H1-less.
+        */}
+        <h1 className="sr-only">Nexora — Your modern online marketplace</h1>
+
         {/* Search is the primary CTA for users with strong intent */}
-        <section>
+        <section aria-label="Search products">
           <SearchBar />
         </section>
 
         {/* Rotating promotional banner — the only "commercial" block on home */}
-        <section>
+        <section aria-label="Featured promotions">
           <Banner banners={banners} loading={bannerLoading} />
         </section>
 
         {/* Category grid is the navigation backbone of the marketplace */}
-        <section>
-          <h2 className="text-2xl font-bold mb-4">Categories</h2>
+        <section aria-labelledby="home-categories-heading">
+          <h2 id="home-categories-heading" className="text-2xl font-bold mb-4">Categories</h2>
           <CategoryGrid categories={categories} />
         </section>
       </div>
