@@ -2,8 +2,19 @@ import { Link } from 'react-router-dom';
 import { Heart, Trash2 } from 'lucide-react';
 import MainLayout from '@/components/layout/MainLayout';
 import ProductGrid from '@/components/ProductGrid';
+import SEO from '@/components/SEO';
 import { Button } from '@/components/ui/button';
 import { useFavorites } from '@/contexts/FavoritesContext';
+
+// Single SEO snippet rendered once — extracted so both render branches
+// (empty state and populated list) share the same metadata without
+// duplicating the JSX inside each MainLayout.
+const favoritesSeo = (
+  <SEO
+    title="Your favorite products"
+    description="Saved products you love on Nexora. Revisit your wishlist and add them to your cart whenever you're ready."
+  />
+);
 
 export default function FavoritesPage() {
   const { favorites, clearFavorites } = useFavorites();
