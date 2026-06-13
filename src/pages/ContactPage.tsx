@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Mail, Phone, MapPin, Send, CheckCircle } from 'lucide-react';
 import MainLayout from '@/components/layout/MainLayout';
+import SEO from '@/components/SEO';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
@@ -68,6 +69,7 @@ export default function ContactPage() {
 
   return (
     <MainLayout>
+      <SEO title="Contact us" description="Get in touch with Nexora support — questions, suggestions and help requests are answered within one business day." />
       <div className="container mx-auto px-4 py-12">
         <h1 className="text-3xl font-bold text-center mb-2">Contact Us</h1>
         <p className="text-muted-foreground text-center mb-10 max-w-lg mx-auto">
