@@ -265,18 +265,24 @@ export default function CartPage() {
                           </Link>
                           <p className="text-xs text-muted-foreground mt-0.5">Unit price: {formatCurrency(product.price)}</p>
                           <div className="flex items-center justify-between mt-2">
+                            {/* Each icon-only button gets a product-scoped
+                                accessible name. Including the product name in
+                                the label is critical here because a cart can
+                                contain many "+" buttons — without the name a
+                                screen-reader user has no way to tell them
+                                apart. */}
                             <div className="flex items-center gap-2">
-                              <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => updateQuantity(product.id, quantity - 1)}>
+                              <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => updateQuantity(product.id, quantity - 1)} aria-label={`Decrease quantity of ${product.name}`}>
                                 <Minus className="w-3 h-3" />
                               </Button>
-                              <span className="w-6 text-center font-medium text-sm">{quantity}</span>
-                              <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => updateQuantity(product.id, quantity + 1)} disabled={quantity >= product.stock}>
+                              <span className="w-6 text-center font-medium text-sm" aria-live="polite">{quantity}</span>
+                              <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => updateQuantity(product.id, quantity + 1)} disabled={quantity >= product.stock} aria-label={`Increase quantity of ${product.name}`}>
                                 <Plus className="w-3 h-3" />
                               </Button>
                             </div>
                             <div className="flex items-center gap-3">
                               <span className="font-bold text-primary text-sm">{formatCurrency(product.price * quantity)}</span>
-                              <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={() => removeItem(product.id)}>
+                              <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={() => removeItem(product.id)} aria-label={`Remove ${product.name} from cart`}>
                                 <Trash2 className="w-3.5 h-3.5" />
                               </Button>
                             </div>

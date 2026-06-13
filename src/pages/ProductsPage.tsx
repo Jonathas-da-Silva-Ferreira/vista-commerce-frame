@@ -6,6 +6,7 @@ import SearchBar from '@/components/SearchBar';
 import ProductGrid from '@/components/ProductGrid';
 import CategoryHeader from '@/components/CategoryHeader';
 import FilterSidebar, { defaultFilterState, type FilterState } from '@/components/FilterSidebar';
+import SEO from '@/components/SEO';
 import { Button } from '@/components/ui/button';
 import { useProducts, useCategories } from '@/hooks/useApi';
 import { useSearchParams, useParams } from 'react-router-dom';
@@ -99,6 +100,13 @@ export default function ProductsPage() {
 
   return (
     <MainLayout>
+      {/* Dynamic per-route metadata — title and description shift based on
+          the current category, subcategory, or search query so each listing
+          page advertises a unique topic to crawlers (no duplicate <title>). */}
+      <SEO
+        title={pageTitle === 'All Products' ? 'All products' : pageTitle}
+        description={`${pageDescription} Browse ${total} ${total === 1 ? 'product' : 'products'} on Nexora.`}
+      />
       <div className="container mx-auto px-4 py-6">
         <div className="mb-6">
           <SearchBar initialQuery={query} onSearch={handleSearch} />
@@ -159,8 +167,11 @@ export default function ProductsPage() {
 
             {totalPages > 1 && (
               <>
-                <div className="flex items-center justify-center gap-2 mt-8">
-                  <Button variant="outline" size="icon" onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1}>
+                {/* nav landmark + aria-label exposes pagination as a discrete
+                    navigation region; arrow buttons get explicit labels so
+                    they aren't announced as just "button". */}
+                <nav className="flex items-center justify-center gap-2 mt-8" aria-label="Product pagination">
+                  <Button variant="outline" size="icon" onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} aria-label="Previous page">
                     <ChevronLeft className="w-4 h-4" />
                   </Button>
                   <div className="flex items-center gap-1">
@@ -170,20 +181,20 @@ export default function ProductsPage() {
                       // pagination usable even with hundreds of pages.
                       if (page === 1 || page === totalPages || (page >= currentPage - 1 && page <= currentPage + 1)) {
                         return (
-                          <Button key={page} variant={currentPage === page ? 'default' : 'outline'} size="icon" onClick={() => setCurrentPage(page)} className="w-10 h-10">
+                          <Button key={page} variant={currentPage === page ? 'default' : 'outline'} size="icon" onClick={() => setCurrentPage(page)} className="w-10 h-10" aria-label={`Go to page ${page}`} aria-current={currentPage === page ? 'page' : undefined}>
                             {page}
                           </Button>
                         );
                       } else if (page === currentPage - 2 || page === currentPage + 2) {
-                        return <span key={page} className="px-2 text-muted-foreground">...</span>;
+                        return <span key={page} className="px-2 text-muted-foreground" aria-hidden="true">...</span>;
                       }
                       return null;
                     })}
                   </div>
-                  <Button variant="outline" size="icon" onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages}>
+                  <Button variant="outline" size="icon" onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} aria-label="Next page">
                     <ChevronRight className="w-4 h-4" />
                   </Button>
-                </div>
+                </nav>
                 <p className="text-center text-sm text-muted-foreground mt-4">Page {currentPage} of {totalPages}</p>
               </>
             )}

@@ -12,3 +12,7 @@ Allow: /
 
 User-agent: *
 Allow: /
+
+# Pointing crawlers at the sitemap removes a discovery step and ensures
+# new routes get crawled promptly.
+Sitemap: https://vista-commerce-frame.lovable.app/sitemap.xml

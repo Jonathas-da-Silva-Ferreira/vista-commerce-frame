@@ -107,7 +107,11 @@ export default function Banner({ banners, loading }: BannerProps) {
                         size="lg"
                         className="bg-white text-black hover:bg-white/90 active:scale-[0.97] transition-all font-semibold text-sm md:text-base px-6 md:px-8 rounded-lg shadow-md"
                       >
-                        {banner.buttonText || 'View more'}
+                        {/* Default copy spells out the action ("Shop now")
+                            instead of the generic "View more" — concrete CTAs
+                            convert better and also score higher on SEO/UX
+                            audits that flag vague link text. */}
+                        {banner.buttonText || 'Shop now'}
                       </Button>
                     </Link>
                   </div>
