@@ -22,6 +22,7 @@ export default function FavoritesPage() {
   if (favorites.length === 0) {
     return (
       <MainLayout>
+        {favoritesSeo}
         <div className="container mx-auto px-4 py-16 text-center">
           <Heart className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
           <h1 className="text-2xl font-bold mb-2">You don't have any favorites yet</h1>
@@ -36,6 +37,7 @@ export default function FavoritesPage() {
 
   return (
     <MainLayout>
+      {favoritesSeo}
       <div className="container mx-auto px-4 py-6">
         <div className="flex items-center justify-between mb-6">
           <div>

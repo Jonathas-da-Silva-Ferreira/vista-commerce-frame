@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Trash2, Minus, Plus, ShoppingBag, ArrowRight, Truck, Zap, DollarSign, Award, MapPin, Loader2, Package, Clock, AlertCircle, Lock } from 'lucide-react';
 import MainLayout from '@/components/layout/MainLayout';
+import SEO from '@/components/SEO';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useCart } from '@/contexts/CartContext';
@@ -200,6 +201,10 @@ export default function CartPage() {
   if (items.length === 0) {
     return (
       <MainLayout>
+        {/* Same SEO snippet for both empty and populated cart — the cart
+            isn't intended to be indexed (low value to crawlers) but a clear
+            unique title still avoids duplicate-metadata SEO warnings. */}
+        <SEO title="Your shopping cart" description="Review items, choose carriers and checkout securely on Nexora." />
         <div className="container mx-auto px-4 py-16 text-center">
           <ShoppingBag className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
           <h1 className="text-2xl font-bold mb-2">Your cart is empty</h1>
@@ -214,6 +219,7 @@ export default function CartPage() {
 
   return (
     <MainLayout>
+      <SEO title="Your shopping cart" description="Review items, choose carriers and checkout securely on Nexora." />
       <div className="container mx-auto px-4 py-6">
         <div className="flex items-center justify-between mb-6">
           <div>
