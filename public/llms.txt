@@ -1,0 +1,21 @@
+# Nexora
+
+> Nexora is a modern online marketplace where independent sellers offer products across categories with transparent shipping, ratings, and reviews.
+
+Nexora connects shoppers and sellers in a single storefront. Buyers can search the catalog, compare carriers, calculate shipping by ZIP code, and check out securely. Sellers can list and manage their own products.
+
+## Pages
+
+- [Home](/): Featured banner, search, and category navigation.
+- [All products](/products): Full catalog with filters, sorting, and pagination.
+- [Sell on Nexora](/sell): List a product as a seller.
+- [Contact](/contact): Reach the Nexora support team.
+- [About](/about): Company overview and mission.
+- [History](/history): Milestones and company journey.
+- [Terms](/terms): Terms of use and legal information.
+
+## Optional
+
+- [Cart](/cart): Shopper-only shopping cart view.
+- [Favorites](/favorites): Shopper-only saved products.
+- [Sign in](/login): Account access for shoppers and sellers.
