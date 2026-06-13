@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { ChevronRight, Heart, Star, Minus, Plus, ShoppingCart, Truck, Shield, RotateCcw, CheckCircle2, Loader2, Zap, DollarSign, Award } from 'lucide-react';
 import MainLayout from '@/components/layout/MainLayout';
 import ProductGrid from '@/components/ProductGrid';
+import SEO from '@/components/SEO';
 import { Button } from '@/components/ui/button';
 import { useCart } from '@/contexts/CartContext';
 import { useFavorites } from '@/contexts/FavoritesContext';
@@ -240,6 +241,14 @@ export default function ProductDetailPage() {
 
   return (
     <MainLayout>
+      {/* Per-product SEO: title + description derived from the product so
+          each listing has a unique, keyword-rich snippet in search results.
+          ogType="product" hints richer cards to platforms that support it. */}
+      <SEO
+        title={product.name}
+        description={(product.description || `Buy ${product.name} on Nexora.`).slice(0, 155)}
+        ogType="product"
+      />
       <div className="container mx-auto px-4 py-6">
         <nav className="flex items-center gap-2 text-sm text-muted-foreground mb-6 flex-wrap">
           <Link to="/" className="hover:text-foreground transition-colors">Home</Link>
