@@ -1,31 +1,50 @@
 import { useState } from 'react';
 import { Star, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 
-// Pure controlled form. Kept dumb so it's drop-in usable from a modal, the
-// post-order page, or anywhere else we need a review capture surface.
-interface ReviewFormProps {
-  onSubmit: (data: { rating: number; comment: string }) => Promise<void>;
-  submitting?: boolean;
+// Pure controlled form, reusable for both creation and editing flows.
+// Why a single form for both: the create/update payload is identical, so
+// duplicating markup would just create two surfaces to keep in sync.
+export interface ReviewFormValues {
+  rating: number;
+  title: string;
+  comment: string;
 }
 
-export function ReviewForm({ onSubmit, submitting }: ReviewFormProps) {
+interface ReviewFormProps {
+  onSubmit: (data: ReviewFormValues) => Promise<void>;
+  submitting?: boolean;
+  // Optional initial values — when present the form is in "edit" mode and
+  // the submit button label flips to make the action self-explanatory.
+  initial?: Partial<ReviewFormValues>;
+  submitLabel?: string;
+  onCancel?: () => void;
+}
+
+export function ReviewForm({ onSubmit, submitting, initial, submitLabel, onCancel }: ReviewFormProps) {
   // Two rating states: the committed one (clicked) and a transient hover one.
   // Separating them prevents flicker as the user moves the mouse off after
   // selecting a value.
-  const [rating, setRating] = useState(0);
+  const [rating, setRating] = useState(initial?.rating ?? 0);
   const [hover, setHover] = useState(0);
-  const [comment, setComment] = useState('');
+  const [title, setTitle] = useState(initial?.title ?? '');
+  const [comment, setComment] = useState(initial?.comment ?? '');
   const { toast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Client-side validation gives instant feedback and avoids a wasted
-    // round-trip when the user obviously hasn't filled the form out.
+    // Client-side validation gives instant feedback. Server-side CHECK
+    // constraints on the `reviews` table enforce the same rules so a
+    // crafted request cannot bypass them.
     if (rating < 1) {
       toast({ title: 'Pick a rating', description: 'Choose 1 to 5 stars to rate the product.', variant: 'destructive' });
+      return;
+    }
+    if (title.trim().length < 1) {
+      toast({ title: 'Title required', description: 'Give your review a short headline.', variant: 'destructive' });
       return;
     }
     if (comment.trim().length < 5) {
@@ -33,12 +52,16 @@ export function ReviewForm({ onSubmit, submitting }: ReviewFormProps) {
       return;
     }
     try {
-      await onSubmit({ rating, comment: comment.trim() });
+      await onSubmit({ rating, title: title.trim(), comment: comment.trim() });
       // Only reset on success so a network failure preserves the text the
       // user just wrote — losing a long comment to a transient error is a
-      // top reason people abandon reviews.
-      setRating(0);
-      setComment('');
+      // top reason people abandon reviews. In edit mode we keep the values
+      // so the modal can close gracefully without flashing empty fields.
+      if (!initial) {
+        setRating(0);
+        setTitle('');
+        setComment('');
+      }
     } catch (err) {
       toast({
         title: 'Could not submit',
@@ -78,6 +101,19 @@ export function ReviewForm({ onSubmit, submitting }: ReviewFormProps) {
       </div>
 
       <div>
+        <label htmlFor="review-title" className="text-sm font-semibold block mb-2">Title</label>
+        <Input
+          id="review-title"
+          value={title}
+          onChange={e => setTitle(e.target.value)}
+          placeholder="Sum it up in one line"
+          // 120 chars matches the DB CHECK so client + server reject the
+          // same overruns; consistent limits avoid confusing error rounds.
+          maxLength={120}
+        />
+      </div>
+
+      <div>
         <label htmlFor="review-comment" className="text-sm font-semibold block mb-2">Comment</label>
         <Textarea
           id="review-comment"
@@ -85,16 +121,24 @@ export function ReviewForm({ onSubmit, submitting }: ReviewFormProps) {
           onChange={e => setComment(e.target.value)}
           placeholder="Share your experience with this product…"
           rows={4}
-          // 500 chars is generous for genuine reviews while still capping the
-          // payload to defend against low-effort abuse.
-          maxLength={500}
+          // 2000 chars matches the DB-side check constraint.
+          maxLength={2000}
         />
-        <p className="text-xs text-muted-foreground mt-1 text-right">{comment.length}/500</p>
+        <p className="text-xs text-muted-foreground mt-1 text-right">{comment.length}/2000</p>
       </div>
 
-      <Button type="submit" disabled={submitting} className="w-full sm:w-auto">
-        {submitting ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Submitting…</> : 'Submit review'}
-      </Button>
+      <div className="flex gap-2">
+        <Button type="submit" disabled={submitting} className="w-full sm:w-auto">
+          {submitting
+            ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Saving…</>
+            : (submitLabel ?? (initial ? 'Save changes' : 'Submit review'))}
+        </Button>
+        {onCancel && (
+          <Button type="button" variant="ghost" onClick={onCancel} disabled={submitting}>
+            Cancel
+          </Button>
+        )}
+      </div>
     </form>
   );
 }
