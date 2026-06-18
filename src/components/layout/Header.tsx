@@ -111,7 +111,8 @@ export default function Header() {
             <HeaderLink to="/sell" icon={<DollarSign className="w-6 h-6" />} label="Sell" />
             <HeaderLink to="/contact" icon={<Mail className="w-6 h-6" />} label="Contact" />
             <HeaderLink to="/favorites" icon={<Heart className="w-6 h-6" />} label="Favorites" badge={favorites.length} />
-            <HeaderLink to="/cart" icon={<ShoppingCart className="w-6 h-6" />} label="Cart" badge={itemCount} />
+            <HeaderLink to="/cart" icon={<ShoppingCart className="w-6 h-6" />} label="Cart" badge={itemCount} pulseKey={pulseKey} />
+
 
             <button
               onClick={toggleTheme}
