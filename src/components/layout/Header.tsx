@@ -61,9 +61,23 @@ export default function Header() {
   const { itemCount } = useCart();
   const { favorites } = useFavorites();
   const { user, isAuthenticated, logout } = useAuth();
-  // Mobile menu state stays local: no other component needs to react to it,
-  // so lifting it into a context would only add noise.
+  // Mobile menu state stays local: no other component needs to react to it.
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  // pulseKey é incrementado a cada CustomEvent 'nexora:cart-pulse' disparado
+  // pelo ProductCard. Mudança de key força remount do <span> do badge,
+  // disparando a animação CSS sem precisar de setTimeout para "limpar".
+  // Inicia em 0 (falsy) para que o badge não anime no mount inicial.
+  const [pulseKey, setPulseKey] = useState(0);
+
+  useEffect(() => {
+    // Listener global: qualquer parte do app pode disparar o pulso sem
+    // precisar conhecer o Header. Desinscrição no cleanup evita leak.
+    const handler = () => setPulseKey(k => k + 1);
+    window.addEventListener('nexora:cart-pulse', handler);
+    return () => window.removeEventListener('nexora:cart-pulse', handler);
+  }, []);
+
 
   return (
     <header className="sticky top-0 z-50 w-full bg-card/95 backdrop-blur-sm border-b border-border shadow-soft">
