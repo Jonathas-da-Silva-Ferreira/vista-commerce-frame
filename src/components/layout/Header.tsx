@@ -137,11 +137,17 @@ export default function Header() {
             <Link to="/cart" className="relative">
               <ShoppingCart className="w-6 h-6" />
               {itemCount > 0 && (
-                <span className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground text-xs w-5 h-5 rounded-full flex items-center justify-center">
+                // Mesmo pulseKey reaproveitado no badge mobile: o evento
+                // global afeta os dois sem código duplicado de subscription.
+                <span
+                  key={pulseKey}
+                  className={`absolute -top-2 -right-2 bg-destructive text-destructive-foreground text-xs w-5 h-5 rounded-full flex items-center justify-center ${pulseKey ? 'animate-cart-bounce' : ''}`}
+                >
                   {itemCount}
                 </span>
               )}
             </Link>
+
             <Button
               variant="ghost"
               size="icon"
