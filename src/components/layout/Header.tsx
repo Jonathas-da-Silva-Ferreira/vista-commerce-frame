@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   User,
   DollarSign,
@@ -24,12 +24,15 @@ interface HeaderLinkProps {
   icon: React.ReactNode;
   label: string;
   badge?: number;
+  // Quando muda, o badge re-anima (via key). Propriedade externa para que
+  // o mesmo trigger anime simultaneamente os badges desktop e mobile.
+  pulseKey?: number;
 }
 
-// Small presentational helper so each nav slot renders identically (icon +
-// label + optional counter). Extracted to avoid copy-pasting the badge logic
-// on every link and to keep the markup scannable.
-function HeaderLink({ to, icon, label, badge }: HeaderLinkProps) {
+// Slot reutilizável para itens da nav (ícone + label + badge).
+// key={pulseKey} no badge força remount e replays a animação CSS sem
+// precisar gerenciar timeouts internos.
+function HeaderLink({ to, icon, label, badge, pulseKey }: HeaderLinkProps) {
   return (
     <Link
       to={to}
@@ -38,7 +41,12 @@ function HeaderLink({ to, icon, label, badge }: HeaderLinkProps) {
       <div className="relative">
         {icon}
         {badge !== undefined && badge > 0 && (
-          <span className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground text-xs w-5 h-5 rounded-full flex items-center justify-center font-medium">
+          <span
+            key={pulseKey}
+            className={`absolute -top-2 -right-2 bg-destructive text-destructive-foreground text-xs w-5 h-5 rounded-full flex items-center justify-center font-medium ${
+              pulseKey ? 'animate-cart-bounce' : ''
+            }`}
+          >
             {badge > 99 ? '99+' : badge}
           </span>
         )}
@@ -53,9 +61,23 @@ export default function Header() {
   const { itemCount } = useCart();
   const { favorites } = useFavorites();
   const { user, isAuthenticated, logout } = useAuth();
-  // Mobile menu state stays local: no other component needs to react to it,
-  // so lifting it into a context would only add noise.
+  // Mobile menu state stays local: no other component needs to react to it.
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  // pulseKey é incrementado a cada CustomEvent 'nexora:cart-pulse' disparado
+  // pelo ProductCard. Mudança de key força remount do <span> do badge,
+  // disparando a animação CSS sem precisar de setTimeout para "limpar".
+  // Inicia em 0 (falsy) para que o badge não anime no mount inicial.
+  const [pulseKey, setPulseKey] = useState(0);
+
+  useEffect(() => {
+    // Listener global: qualquer parte do app pode disparar o pulso sem
+    // precisar conhecer o Header. Desinscrição no cleanup evita leak.
+    const handler = () => setPulseKey(k => k + 1);
+    window.addEventListener('nexora:cart-pulse', handler);
+    return () => window.removeEventListener('nexora:cart-pulse', handler);
+  }, []);
+
 
   return (
     <header className="sticky top-0 z-50 w-full bg-card/95 backdrop-blur-sm border-b border-border shadow-soft">
@@ -89,7 +111,8 @@ export default function Header() {
             <HeaderLink to="/sell" icon={<DollarSign className="w-6 h-6" />} label="Sell" />
             <HeaderLink to="/contact" icon={<Mail className="w-6 h-6" />} label="Contact" />
             <HeaderLink to="/favorites" icon={<Heart className="w-6 h-6" />} label="Favorites" badge={favorites.length} />
-            <HeaderLink to="/cart" icon={<ShoppingCart className="w-6 h-6" />} label="Cart" badge={itemCount} />
+            <HeaderLink to="/cart" icon={<ShoppingCart className="w-6 h-6" />} label="Cart" badge={itemCount} pulseKey={pulseKey} />
+
 
             <button
               onClick={toggleTheme}
@@ -114,11 +137,17 @@ export default function Header() {
             <Link to="/cart" className="relative">
               <ShoppingCart className="w-6 h-6" />
               {itemCount > 0 && (
-                <span className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground text-xs w-5 h-5 rounded-full flex items-center justify-center">
+                // Mesmo pulseKey reaproveitado no badge mobile: o evento
+                // global afeta os dois sem código duplicado de subscription.
+                <span
+                  key={pulseKey}
+                  className={`absolute -top-2 -right-2 bg-destructive text-destructive-foreground text-xs w-5 h-5 rounded-full flex items-center justify-center ${pulseKey ? 'animate-cart-bounce' : ''}`}
+                >
                   {itemCount}
                 </span>
               )}
             </Link>
+
             <Button
               variant="ghost"
               size="icon"

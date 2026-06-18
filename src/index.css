@@ -189,3 +189,32 @@
     transform: scale(1);
   }
 }
+
+/*
+ * cart-bounce: animação curta disparada quando um item entra no carrinho.
+ * Por quê uma chave própria: o bounce precisa "voltar" ao estado inicial
+ * (scale(1)) — usar animate-pulse não comunicaria "algo acabou de acontecer".
+ * Duração curta (400ms) garante feedback sem distrair.
+ */
+@keyframes cartBounce {
+  0%   { transform: scale(1); }
+  30%  { transform: scale(1.35); }
+  60%  { transform: scale(0.92); }
+  100% { transform: scale(1); }
+}
+
+.animate-cart-bounce {
+  animation: cartBounce 0.4s ease-out;
+}
+
+/*
+ * Utilitário para esconder scrollbar em carrosseis horizontais. Tailwind 3
+ * não traz built-in; definimos uma vez aqui em vez de adicionar plugin.
+ */
+.scrollbar-hide {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}

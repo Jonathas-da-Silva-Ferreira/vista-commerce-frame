@@ -1,28 +1,24 @@
 import type { Product } from '@/types';
 import ProductCard from './ProductCard';
+import ProductCardSkeleton from './skeletons/ProductCardSkeleton';
 
 interface ProductGridProps {
   products: Product[];
   loading?: boolean;
 }
 
-// Renders the product grid, including its loading skeleton and empty state.
-// Keeping these three cases here (instead of spreading them across pages)
-// ensures the listing UX stays consistent everywhere products are shown.
+/**
+ * Renderiza grid de produtos com 3 estados explícitos: loading, vazio, dados.
+ * Skeleton é EXTRAÍDO (componente próprio) — antes vivia inline e duplicava
+ * o markup do ProductCard. Reuso garante que mudanças no card real são
+ * refletidas no placeholder também.
+ */
 export default function ProductGrid({ products, loading }: ProductGridProps) {
   if (loading) {
     return (
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
         {Array.from({ length: 8 }).map((_, i) => (
-          <div key={i} className="bg-card rounded-xl overflow-hidden shadow-card animate-pulse">
-            <div className="aspect-square bg-muted" />
-            <div className="p-4 space-y-3">
-              <div className="h-4 bg-muted rounded w-3/4" />
-              <div className="h-4 bg-muted rounded w-1/2" />
-              <div className="h-6 bg-muted rounded w-1/3" />
-              <div className="h-9 bg-muted rounded w-full" />
-            </div>
-          </div>
+          <ProductCardSkeleton key={i} />
         ))}
       </div>
     );

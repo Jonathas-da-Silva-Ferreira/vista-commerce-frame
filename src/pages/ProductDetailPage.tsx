@@ -12,6 +12,7 @@ import { useLocation } from '@/contexts/LocationContext';
 import { Input } from '@/components/ui/input';
 import { formatCurrency } from '@/lib/utils';
 import { ProductReviews } from '@/components/reviews/ProductReviews';
+import { useRecentlyViewed } from '@/hooks/useRecentlyViewed';
 import type { ShippingOption } from '@/types';
 
 // Gallery is split out so the "currently selected image" state stays local —
@@ -177,10 +178,20 @@ export default function ProductDetailPage() {
   const [quantity, setQuantity] = useState(1);
   const { addItem, isInCart } = useCart();
   const { toggleFavorite, isFavorite } = useFavorites();
+  // Hook de histórico — track() é estável (useCallback dentro do hook),
+  // pode ser usado como dependência de useEffect sem causar loop.
+  const { track } = useRecentlyViewed();
 
   const { product, loading } = useProduct(id);
   const { categories } = useCategories();
   const { products: relatedProducts } = useRelatedProducts(product?.id, product?.category);
+
+  // Registra a visita no localStorage assim que o produto resolve. Guard de
+  // `product?.id` evita gravar entradas duplicadas em re-renders intermediários
+  // do mesmo produto (id como dep garante uma gravação por produto visitado).
+  useEffect(() => {
+    if (product) track(product);
+  }, [product?.id, track]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const category = categories.find(c => c.slug === product?.category);
 
