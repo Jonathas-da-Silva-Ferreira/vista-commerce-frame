@@ -12,6 +12,7 @@ import { useLocation } from '@/contexts/LocationContext';
 import { Input } from '@/components/ui/input';
 import { formatCurrency } from '@/lib/utils';
 import { ProductReviews } from '@/components/reviews/ProductReviews';
+import { useRecentlyViewed } from '@/hooks/useRecentlyViewed';
 import type { ShippingOption } from '@/types';
 
 // Gallery is split out so the "currently selected image" state stays local —
