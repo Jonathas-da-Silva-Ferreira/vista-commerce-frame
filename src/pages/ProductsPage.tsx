@@ -71,7 +71,11 @@ export default function ProductsPage() {
 
   // Reset de paginação quando o dataset muda — evita ficar na página 5 de
   // um resultado de 2 páginas (renderizaria vazio).
-  useEffect(() => { setCurrentPage(1); }, [categorySlug, query, filterState]);
+  // ATENÇÃO: depender de `filterState` (objeto) re-disparava a cada render
+  // porque useUrlFilters recria a referência. Serializar via apiFilters
+  // (já memoizado) dá uma chave estável que só muda quando algo real mudou.
+  const resetKey = JSON.stringify(apiFilters);
+  useEffect(() => { setCurrentPage(1); }, [resetKey]);
   // Mudar de categoria limpa a subcategoria selecionada — "Smartphones" não
   // existe dentro de "Casa", então manter o filtro daria zero resultados.
   useEffect(() => {

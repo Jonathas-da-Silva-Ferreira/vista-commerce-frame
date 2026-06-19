@@ -117,22 +117,26 @@ function useCachedList<T>(key: string, loader: () => Promise<T[]>) {
   const [items, setItems] = useState<T[]>(cached ?? []);
   const [loading, setLoading] = useState(!cached);
   const [error, setError] = useState<string | null>(null);
-  // Track whether we already kicked off a fetch this mount to avoid React 18
-  // StrictMode double-invocation triggering two network requests.
-  const startedRef = useRef(false);
+  // loaderRef captura a função sem fazê-la entrar nas deps do useEffect.
+  // Callers passam arrow inline (ex.: `() => api.getCategories()`), cuja
+  // identidade muda a cada render — se entrasse nas deps, o efeito re-rodaria
+  // a cada render mesmo com `key` estável. A ref garante 1 fetch por key.
+  const loaderRef = useRef(loader);
+  loaderRef.current = loader;
 
   useEffect(() => {
-    if (startedRef.current) return;
-    startedRef.current = true;
     let cancelled = false;
 
-    cachedFetch(key, loader)
+    cachedFetch(key, () => loaderRef.current())
       .then(result => { if (!cancelled) setItems(result); })
       .catch(err => { if (!cancelled) setError((err as Error).message); })
       .finally(() => { if (!cancelled) setLoading(false); });
 
     return () => { cancelled = true; };
-  }, [key, loader]);
+    // Apenas `key` na lista: trocar de key = nova chave de cache = novo fetch.
+    // loader é estável via ref (ver acima). cachedFetch já deduplica in-flight
+    // contra StrictMode double-invoke, então não precisamos de startedRef.
+  }, [key]);
 
   return { items, loading, error };
 }
@@ -142,15 +146,10 @@ export function useCategories() {
   return { categories: items, loading, error };
 }
 
-export function useFeaturedProducts() {
-  const { items, loading, error } = useCachedList<Product>('featured', () => api.getFeaturedProducts());
-  return { products: items, loading, error };
-}
-
-export function usePromotionProducts() {
-  const { items, loading, error } = useCachedList<Product>('promotion', () => api.getPromotionProducts());
-  return { products: items, loading, error };
-}
+// useFeaturedProducts/usePromotionProducts foram removidos: produtos em
+// destaque/promoção agora vivem exclusivamente dentro das categorias
+// `best-products` e `deals`, consumidos via useProducts({featured/promotion}).
+// Manter hooks órfãos só convida re-introdução acidental de seções duplicadas.
 
 export function useRelatedProducts(productId: string | undefined, category: string | undefined) {
   const key = productId && category ? `related:${category}:${productId}` : '';
