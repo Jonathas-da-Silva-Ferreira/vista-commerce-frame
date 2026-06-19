@@ -3,29 +3,27 @@ import SearchBar from '@/components/SearchBar';
 import Banner from '@/components/Banner';
 import CategoryGrid from '@/components/CategoryGrid';
 import SEO from '@/components/SEO';
-import FeaturedCarousel from '@/components/home/FeaturedCarousel';
-import DealsGrid from '@/components/home/DealsGrid';
 import RecentlyViewed from '@/components/home/RecentlyViewed';
 import { useCategories, useBanners } from '@/hooks/useApi';
 
 /**
- * HomePage — entrada do marketplace.
+ * HomePage — porta de entrada do marketplace.
  *
- * Estrutura otimizada para conversão e descoberta:
- *  1. Search (intenção alta — atalho para usuários decididos)
- *  2. Banner (LCP candidate — promoção em destaque)
- *  3. Categories (navegação backbone)
- *  4. Recently viewed (continuar de onde parou — retornantes)
- *  5. Today's deals (urgência + conversão)
- *  6. Featured (descoberta de novidades)
+ * Decisão arquitetural (junho/2026): produtos NUNCA aparecem soltos na
+ * home. Todo produto pertence a uma categoria, e as listagens "Featured" /
+ * "Deals" foram movidas para as categorias dedicadas `best-products` e
+ * `deals` (ver ProductsPage.tsx → isSpecialFeatured / isSpecialPromotion).
  *
- * Ordem importa: vistos recentemente antes de ofertas porque usuário
- * retornante tem maior chance de converter num produto já considerado
- * que em um totalmente novo. Para usuário novo, RecentlyViewed simplesmente
- * não renderiza (return null) e a hierarquia segue natural.
+ * Por quê:
+ *  - Evita duplicação: um mesmo produto em destaque + em oferta aparecia 3x
+ *    (home featured, home deals, e dentro da própria categoria).
+ *  - Hierarquia consistente: categorias são o único eixo de navegação,
+ *    facilitando SEO (uma URL canônica por produto-em-contexto) e analytics.
+ *  - Home enxuta = LCP mais rápido e menor superfície de re-render.
  */
 export default function HomePage() {
-  const { categories } = useCategories();
+  // Hooks com cache de módulo (useApi) — não disparam refetch em remount.
+  const { categories, loading: categoriesLoading } = useCategories();
   const { banners, loading: bannerLoading } = useBanners();
 
   return (
@@ -43,22 +41,21 @@ export default function HomePage() {
         </section>
 
         <section aria-label="Featured promotions">
+          {/* Banner é o LCP candidate — recebe loading explícito pra
+              evitar layout shift entre skeleton e imagem final. */}
           <Banner banners={banners} loading={bannerLoading} />
         </section>
 
         <section aria-labelledby="home-categories-heading">
           <h2 id="home-categories-heading" className="text-2xl font-bold mb-4">Categories</h2>
-          <CategoryGrid categories={categories} />
+          {/* CategoryGrid recebe loading para renderizar skeletons no fetch
+              inicial — antes mostrava grid vazio durante ~200ms. */}
+          <CategoryGrid categories={categories} loading={categoriesLoading} />
         </section>
 
-        {/* Componente decide internamente se renderiza (só aparece se houver
-            histórico em localStorage). Sem JS condicional aqui — mantém a
-            HomePage declarativa e fácil de ler. */}
+        {/* RecentlyViewed self-gates: só renderiza se houver histórico em
+            localStorage. Mantém a home declarativa (sem if condicional aqui). */}
         <RecentlyViewed />
-
-        <DealsGrid />
-
-        <FeaturedCarousel />
       </div>
     </MainLayout>
   );
