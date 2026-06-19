@@ -80,11 +80,31 @@ function CategoryCard({ category }: CategoryCardProps) {
   );
 }
 
+import CategoryCardSkeleton from './skeletons/CategoryCardSkeleton';
+
 interface CategoryGridProps {
   categories: Category[];
+  // loading é opcional para não quebrar call sites que não passam o flag —
+  // o grid simplesmente renderiza categorias quando ausente.
+  loading?: boolean;
 }
 
-export default function CategoryGrid({ categories }: CategoryGridProps) {
+export default function CategoryGrid({ categories, loading }: CategoryGridProps) {
+  // Skeleton só dispara quando NÃO há dados em cache. Se o hook devolveu
+  // categorias (mesmo durante refetch), preferimos mostrá-las a piscar
+  // skeleton sobre conteúdo válido.
+  if (loading && categories.length === 0) {
+    return (
+      <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 md:gap-4">
+        {/* 12 placeholders cobrem 2 linhas no breakpoint de 6 colunas —
+            suficiente pra reservar viewport sem exagero. */}
+        {Array.from({ length: 12 }).map((_, i) => (
+          <CategoryCardSkeleton key={i} />
+        ))}
+      </div>
+    );
+  }
+
   return (
     <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 md:gap-4">
       {categories.map((category) => (

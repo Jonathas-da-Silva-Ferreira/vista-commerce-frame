@@ -1,86 +1,51 @@
+
 ## Objetivo
 
-Elevar a dinâmica percebida do site atacando os 4 eixos em um pacote médio coeso: performance percebida, fluidez visual, conversão na Home e busca/filtros. Sem mexer em regras de negócio, autenticação ou backend.
+Corrigir duplicações de renderização e mover "Featured" e "Deals" para suas categorias dedicadas, sem mexer no visual/tema.
 
-## Entregáveis
+## 1. HomePage — remover seções duplicadas
 
-### 1. Performance percebida
+`src/pages/HomePage.tsx`:
+- Remover `<DealsGrid />` e `<FeaturedCarousel />` (e seus imports).
+- Manter: SearchBar, Banner, CategoryGrid, RecentlyViewed.
+- Resultado: produtos só aparecem dentro das categorias. A Home vira porta de entrada para navegação por categoria + recém-vistos.
 
-- **Code-splitting por rota** em `src/App.tsx`: trocar `import` estáticos por `React.lazy` para todas as páginas exceto `HomePage` (LCP). Envolver `<Routes>` num `<Suspense fallback={<RouteFallback />}>`.
-- **Barra de progresso de navegação** (estilo NProgress) no topo, disparada por mudança de `location.pathname` — feedback imediato em cada clique.
-- **Skeletons padronizados**: criar `src/components/skeletons/` com `ProductCardSkeleton`, `CategoryCardSkeleton`, `BannerSkeleton`. Substituir os `loading` atuais nos componentes que hoje renderizam vazio.
-- **Lazy-load de imagens** em `ProductGrid` e `CategoryGrid`: `loading="lazy"`, `decoding="async"` e `width`/`height` explícitos para zerar CLS. Imagem do banner principal recebe `fetchpriority="high"`.
+## 2. Categorias especiais já funcionam — apenas validar
 
-### 2. Fluidez visual
+`ProductsPage.tsx` já trata `best-products` e `deals` como categorias dinâmicas via flags `featured`/`promotion` (linhas 47–67). Os cards do `CategoryGrid` já linkam para `/products?category=<slug>`, então clicar em "Best Products" ou "Deals" leva à listagem filtrada — sem hardcode, baseado em `isFeatured` / `isPromotion` do produto.
 
-- **Transições de rota** com `framer-motion` + `AnimatePresence` (fade + slide curto de 200ms). Isolado num componente `AnimatedRoutes` para não poluir `App.tsx`.
-- **Micro-interações nos `ProductCard`**: hover com lift sutil (`translateY(-4px)` + shadow), animação de favoritar (escala no coração), e animação de "adicionar ao carrinho" — o card emite uma partícula visual que voa até o ícone do carrinho no header.
-- **Badge de carrinho com contador animado** (escala bounce quando aumenta).
+Nada a alterar aqui; só confirmar que continua funcionando após remover as seções da Home.
 
-### 3. Conversão na Home
+## 3. Arquivos órfãos
 
-A home hoje é só `search + banner + categorias`. Vamos adicionar 3 seções abaixo das categorias (sem retirar nada do que existe):
+Após remoção, `src/components/home/DealsGrid.tsx` e `src/components/home/FeaturedCarousel.tsx` ficam sem uso. Deletar para não confundir manutenção futura.
 
-- **Produtos em destaque** (`featured=true`) — carrossel horizontal com snap.
-- **Ofertas do dia** (`promotion=true`) — grid de 4 produtos com badge de desconto e contador "restam X".
-- **Vistos recentemente** — lê de `localStorage` (chave `nexora:recent`), só renderiza se houver itens. Grava ao entrar em `ProductDetailPage`.
+`useFeaturedProducts` e `usePromotionProducts` em `useApi.ts` continuam usados? Não — só eram consumidos pelos dois componentes removidos. Manter os hooks (são pequenos e a `ProductsPage` usa a mesma API via `getProducts({featured:true})`), mas marcar como dispensáveis — ou remover. **Decisão: remover** para reduzir superfície morta.
 
-Cada seção tem `<h2>` semântico + link "Ver todos" apontando pra `/category/best-products` ou `/category/deals`.
+## 4. Duplicação de render / re-render
 
-### 4. Busca e filtros
+Revisão rápida do que já está correto e do que ajustar:
 
-- **Autocomplete instantâneo** no `SearchBar`: debounce 250ms, lista até 6 sugestões (nome do produto + categoria). Navegação por teclado (↑↓ Enter Esc). Reusa o hook `useProducts` com `limit=6`.
-- **Sincronização completa de filtros na URL** em `ProductsPage`: `priceMin`, `priceMax`, `sort`, `rating`, `subcategory` viram search params. Refresh e compartilhamento preservam o estado.
-- **Chips de filtros ativos** acima do `ProductGrid` — cada chip remove um filtro ao clicar no X.
+- ✅ Header/Footer montados uma só vez em `App.tsx`; `MainLayout` é pass-through.
+- ✅ `useApi` tem cache de módulo + dedupe de in-flight + `startedRef` contra StrictMode.
+- ✅ `useProducts` já usa `useMemo` no `apiFilters`.
+- ⚠️ `useCachedList` tem `loader` em deps do `useEffect`. Como os callers passam arrow inline (`() => api.getCategories()`), a referência muda a cada render. O `startedRef` impede refetch mas o efeito ainda reexecuta sem necessidade. **Fix:** remover `loader` das deps (já é capturado no closure e protegido por `startedRef`) — só `[key]`.
+- ⚠️ `ProductsPage` linha 74: `useEffect(..., [..., filterState])` com `filterState` como objeto. Como `useUrlFilters` deriva o objeto a cada render, isso reseta a página em todo render. **Fix:** depender da string serializada (`JSON.stringify(filterState)`) ou dos campos individuais.
 
-## Arquivos
+## 5. Skeletons / flash
 
-```text
-src/
-  App.tsx                                 (lazy + Suspense + AnimatedRoutes)
-  components/
-    AnimatedRoutes.tsx                    (novo)
-    NavigationProgress.tsx                (novo)
-    SearchBar.tsx                         (autocomplete)
-    ProductCard.tsx                       (micro-interações + fly-to-cart)
-    skeletons/
-      ProductCardSkeleton.tsx             (novo)
-      CategoryCardSkeleton.tsx            (novo)
-      BannerSkeleton.tsx                  (novo)
-    home/
-      FeaturedCarousel.tsx                (novo)
-      DealsGrid.tsx                       (novo)
-      RecentlyViewed.tsx                  (novo)
-    products/
-      ActiveFilterChips.tsx               (novo)
-  hooks/
-    useRecentlyViewed.ts                  (novo, localStorage)
-    useUrlFilters.ts                      (novo, sync filtros↔URL)
-  pages/
-    HomePage.tsx                          (3 novas seções)
-    ProductsPage.tsx                      (URL sync + chips)
-    ProductDetailPage.tsx                 (grava em recent)
-```
+Já existem `BannerSkeleton`, `CategoryCardSkeleton`, `ProductCardSkeleton` e `RouteFallback` no `App.tsx` reserva altura mínima. Verificar que `CategoryGrid` consome skeleton enquanto `useCategories` carrega — hoje ele renderiza grid vazio. **Fix pequeno:** passar `loading` para `CategoryGrid` e mostrar 12 `CategoryCardSkeleton` durante o fetch inicial.
 
-## Detalhes técnicos
+## Arquivos afetados
 
-- **framer-motion** já está disponível no projeto Lovable; não precisa instalar.
-- **NavigationProgress** usa `useLocation` + `useEffect`; barra é um `<div>` fixo com `transform: scaleX()` animado via CSS — zero dependência extra.
-- **Fly-to-cart**: ref no botão "Adicionar" e ref global no ícone do carrinho expostos via `CartContext`; ao adicionar, clona a imagem do produto num portal e anima posição com `framer-motion` (`layoutId` ou `animate` com coordenadas calculadas via `getBoundingClientRect`).
-- **useRecentlyViewed**: máximo 12 itens, dedupe por `id`, mais recente primeiro, TTL informal de 30 dias.
-- **useUrlFilters**: encapsula `useSearchParams`, expõe `{ filters, setFilter, clearAll }`. Serialização: números viram string, arrays viram CSV. Decodificação no mount evita "flash" de filtros vazios.
-- **Autocomplete**: usa `useProducts({ query }, 1, 6)` com `useDeferredValue` pra não bloquear digitação.
-- **Suspense fallback**: layout neutro com `<Header />` e skeleton genérico no `<main>` — evita pular o header durante a transição.
+- `src/pages/HomePage.tsx` — remover Deals/Featured + passar loading de categorias
+- `src/components/CategoryGrid.tsx` — aceitar `loading` e renderizar skeletons
+- `src/hooks/useApi.ts` — corrigir deps de `useCachedList`; remover hooks `useFeaturedProducts` / `usePromotionProducts` órfãos
+- `src/pages/ProductsPage.tsx` — corrigir deps do `useEffect` que reseta página
+- Deletar: `src/components/home/DealsGrid.tsx`, `src/components/home/FeaturedCarousel.tsx`
 
-## Fora de escopo desta rodada
+## Fora do escopo
 
-- Tradução PT-BR completa (UI ainda em EN).
-- Server-side rendering / Edge caching.
-- Refatoração do mockServer ou camada de dados.
-- Mudanças no Admin.
-
-## Riscos
-
-- **Animações em mobile**: respeitar `prefers-reduced-motion` em todas as transições novas (transição vira `opacity` simples ou nenhuma).
-- **URL sync** pode colidir com `useEffect` que reseta paginação — preciso garantir que mudança de filtro por URL não dispare loop. Solução: comparar valor anterior antes de chamar `setSearchParams`.
-- **Fly-to-cart** depende de o ref do carrinho existir no header em todas as rotas — já garantido pelo `StorefrontShell` que monta `<Header />` uma vez.
+- Visual/tema/layout permanecem idênticos.
+- Sem mudanças no backend, mockServer ou dados.
+- Painel admin e rotas não são tocados.
