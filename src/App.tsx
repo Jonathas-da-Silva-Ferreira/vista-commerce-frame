@@ -39,6 +39,8 @@ const CartPage = lazy(() => import("./pages/CartPage"));
 const CheckoutPage = lazy(() => import("./pages/CheckoutPage"));
 const FavoritesPage = lazy(() => import("./pages/FavoritesPage"));
 const LoginPage = lazy(() => import("./pages/LoginPage"));
+const ForgotPasswordPage = lazy(() => import("./pages/ForgotPasswordPage"));
+const ResetPasswordPage = lazy(() => import("./pages/ResetPasswordPage"));
 const SellProductPage = lazy(() => import("./pages/SellProductPage"));
 const ContactPage = lazy(() => import("./pages/ContactPage"));
 const LogisticsDashboardPage = lazy(() => import("./pages/LogisticsDashboardPage"));
