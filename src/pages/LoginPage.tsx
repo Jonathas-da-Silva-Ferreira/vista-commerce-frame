@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Link, useNavigate, useLocation, Navigate } from 'react-router-dom';
 import { Eye, EyeOff, Mail, Lock, User as UserIcon, UserX, AlertCircle, Loader2 } from 'lucide-react';
 import MainLayout from '@/components/layout/MainLayout';
 import SEO from '@/components/SEO';
