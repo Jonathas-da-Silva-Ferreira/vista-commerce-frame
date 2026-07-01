@@ -28,7 +28,13 @@ interface AuthContextType {
   isSeller: boolean;
   signInWithPassword: (email: string, password: string) => Promise<{ error: string | null }>;
   signUp: (email: string, password: string, displayName: string) => Promise<{ error: string | null }>;
-  signInWithGoogle: () => Promise<{ error: string | null }>;
+  // `redirectPath` is remembered so the OAuth full-page redirect can return
+  // the user to the page they were originally trying to access.
+  signInWithGoogle: (redirectPath?: string) => Promise<{ error: string | null }>;
+  // Sends a Supabase password-reset email. The link lands on /reset-password
+  // where updatePassword() finishes the flow.
+  resetPasswordForEmail: (email: string) => Promise<{ error: string | null }>;
+  updatePassword: (newPassword: string) => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
   // `logout` is a back-compat alias for legacy callers (e.g. Header).
   logout: () => Promise<void>;
