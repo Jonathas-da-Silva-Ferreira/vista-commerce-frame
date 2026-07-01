@@ -68,7 +68,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // We deliberately avoid awaiting Supabase calls inside the listener to
   // prevent deadlocks documented in the SDK.
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, newSession) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, newSession) => {
       setSession(newSession);
       setUser(newSession?.user ? toAppUser(newSession.user) : null);
 
@@ -76,6 +76,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // Defer the role fetch with setTimeout(0) so the auth listener
         // returns synchronously — pattern recommended to avoid SDK deadlocks.
         setTimeout(() => { void loadRoles(newSession.user.id); }, 0);
+
+        // OAuth full-page redirect returns the user to `/`. If we stashed
+        // an intended destination before signInWithGoogle(), honor it now
+        // that the session is live. Skip during PASSWORD_RECOVERY so the
+        // reset-password page keeps control of its own flow.
+        if (event === 'SIGNED_IN') {
+          try {
+            const target = sessionStorage.getItem('auth:redirectAfter');
+            if (target && target !== window.location.pathname) {
+              sessionStorage.removeItem('auth:redirectAfter');
+              window.history.replaceState({}, '', target);
+            } else if (target) {
+              sessionStorage.removeItem('auth:redirectAfter');
+            }
+          } catch { /* storage disabled */ }
+        }
       } else {
         setRoles([]);
       }
