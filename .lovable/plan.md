@@ -1,51 +1,47 @@
+# Como entrar como administrador
 
-## Objetivo
+Nenhuma alteração de código é necessária. O bootstrap admin já está implementado no trigger `handle_new_user()` do banco: **qualquer conta criada com o email `jonathasx.525@gmail.com` recebe automaticamente o papel `admin`** na tabela `user_roles`.
 
-Corrigir duplicações de renderização e mover "Featured" e "Deals" para suas categorias dedicadas, sem mexer no visual/tema.
+## Passo a passo
 
-## 1. HomePage — remover seções duplicadas
+1. Abra a rota **`/login`** no preview.
+2. Alterne para a aba **"Criar conta" / Sign Up**.
+3. Preencha:
+   - **Email:** `jonathasx.525@gmail.com`
+   - **Senha:** escolha uma senha sua (mín. 6 caracteres)
+   - **Nome de exibição:** o que quiser
+4. Envie o formulário.
+   - O trigger `handle_new_user()` executa no `INSERT` em `auth.users` e cria em paralelo:
+     - `profiles` (perfil público)
+     - `user_roles` com `role='customer'`
+     - `user_roles` com `role='admin'` (só para esse email)
+5. Após o signup, o `AuthContext` chama `loadRoles()` e você já entra com `isAdmin === true`.
+6. Navegue até **`/admin`** — o `<ProtectedRoute requireRoles={["admin"]}>` libera o acesso.
 
-`src/pages/HomePage.tsx`:
-- Remover `<DealsGrid />` e `<FeaturedCarousel />` (e seus imports).
-- Manter: SearchBar, Banner, CategoryGrid, RecentlyViewed.
-- Resultado: produtos só aparecem dentro das categorias. A Home vira porta de entrada para navegação por categoria + recém-vistos.
+## Detalhes técnicos (por quê funciona assim)
 
-## 2. Categorias especiais já funcionam — apenas validar
+- **Bootstrap por email fixo:** a promoção está numa função `SECURITY DEFINER` disparada por trigger em `auth.users`. Isso evita expor um endpoint público de "virar admin" e mantém a regra 100% no servidor — o cliente não decide papéis.
+- **Papéis em tabela separada (`user_roles`):** nunca no `profiles`. Se estivesse no perfil, um usuário poderia se auto-promover via `UPDATE` no próprio perfil (privilege escalation). A checagem passa pela função `private.has_role()` usada nas RLS policies.
+- **Confirmação de email:** se o projeto tiver "Confirm email" ligado em Cloud → Users → Auth Settings, você precisa clicar no link enviado antes que a sessão seja liberada. Para testes rápidos, desative essa opção.
+- **Sessão hidratada antes do redirect:** o `ProtectedRoute` espera `loading === false` antes de decidir, então não há flash de `/login` após o signup.
 
-`ProductsPage.tsx` já trata `best-products` e `deals` como categorias dinâmicas via flags `featured`/`promotion` (linhas 47–67). Os cards do `CategoryGrid` já linkam para `/products?category=<slug>`, então clicar em "Best Products" ou "Deals" leva à listagem filtrada — sem hardcode, baseado em `isFeatured` / `isPromotion` do produto.
+## Se já existir uma conta com esse email sem o papel admin
 
-Nada a alterar aqui; só confirmar que continua funcionando após remover as seções da Home.
+Isso só acontece se a conta foi criada antes do trigger existir. Nesse caso, rode uma migration com:
 
-## 3. Arquivos órfãos
+```sql
+-- Idempotente: ON CONFLICT respeita a UNIQUE(user_id, role).
+INSERT INTO public.user_roles (user_id, role)
+SELECT id, 'admin'::public.app_role
+FROM auth.users
+WHERE email = 'jonathasx.525@gmail.com'
+ON CONFLICT (user_id, role) DO NOTHING;
+```
 
-Após remoção, `src/components/home/DealsGrid.tsx` e `src/components/home/FeaturedCarousel.tsx` ficam sem uso. Deletar para não confundir manutenção futura.
+Me avise se cair nesse caso que eu preparo a migration.
 
-`useFeaturedProducts` e `usePromotionProducts` em `useApi.ts` continuam usados? Não — só eram consumidos pelos dois componentes removidos. Manter os hooks (são pequenos e a `ProductsPage` usa a mesma API via `getProducts({featured:true})`), mas marcar como dispensáveis — ou remover. **Decisão: remover** para reduzir superfície morta.
+## Boas práticas
 
-## 4. Duplicação de render / re-render
-
-Revisão rápida do que já está correto e do que ajustar:
-
-- ✅ Header/Footer montados uma só vez em `App.tsx`; `MainLayout` é pass-through.
-- ✅ `useApi` tem cache de módulo + dedupe de in-flight + `startedRef` contra StrictMode.
-- ✅ `useProducts` já usa `useMemo` no `apiFilters`.
-- ⚠️ `useCachedList` tem `loader` em deps do `useEffect`. Como os callers passam arrow inline (`() => api.getCategories()`), a referência muda a cada render. O `startedRef` impede refetch mas o efeito ainda reexecuta sem necessidade. **Fix:** remover `loader` das deps (já é capturado no closure e protegido por `startedRef`) — só `[key]`.
-- ⚠️ `ProductsPage` linha 74: `useEffect(..., [..., filterState])` com `filterState` como objeto. Como `useUrlFilters` deriva o objeto a cada render, isso reseta a página em todo render. **Fix:** depender da string serializada (`JSON.stringify(filterState)`) ou dos campos individuais.
-
-## 5. Skeletons / flash
-
-Já existem `BannerSkeleton`, `CategoryCardSkeleton`, `ProductCardSkeleton` e `RouteFallback` no `App.tsx` reserva altura mínima. Verificar que `CategoryGrid` consome skeleton enquanto `useCategories` carrega — hoje ele renderiza grid vazio. **Fix pequeno:** passar `loading` para `CategoryGrid` e mostrar 12 `CategoryCardSkeleton` durante o fetch inicial.
-
-## Arquivos afetados
-
-- `src/pages/HomePage.tsx` — remover Deals/Featured + passar loading de categorias
-- `src/components/CategoryGrid.tsx` — aceitar `loading` e renderizar skeletons
-- `src/hooks/useApi.ts` — corrigir deps de `useCachedList`; remover hooks `useFeaturedProducts` / `usePromotionProducts` órfãos
-- `src/pages/ProductsPage.tsx` — corrigir deps do `useEffect` que reseta página
-- Deletar: `src/components/home/DealsGrid.tsx`, `src/components/home/FeaturedCarousel.tsx`
-
-## Fora do escopo
-
-- Visual/tema/layout permanecem idênticos.
-- Sem mudanças no backend, mockServer ou dados.
-- Painel admin e rotas não são tocados.
+- **Troque a senha assim que entrar** — o email de bootstrap é público no código, então a segurança real está na senha que só você conhece.
+- **Não use o admin para navegação diária** — crie uma conta cliente separada para testar o fluxo do comprador; assim você não vaza dados de moderação nas telas normais.
+- **Depois do MVP, remova o bootstrap por email fixo** do `handle_new_user()` e promova admins manualmente via migration ou via um painel de gestão de papéis. Isso elimina o vetor de "quem controlar o DNS/email um dia poderia recriar a conta".
