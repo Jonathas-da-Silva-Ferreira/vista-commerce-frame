@@ -130,10 +130,8 @@ export default function LoginPage() {
     return <Navigate to={from} replace />;
   }
 
-  const handleGuestContinue = () => {
-    toast.info('Continuing as a guest');
-    navigate('/');
-  };
+
+
 
   return (
     <MainLayout>
