@@ -188,6 +188,14 @@ export default function LoginPage() {
                     </div>
                   </div>
 
+                  {/* Forgot password link — routes to a dedicated page so
+                      the reset flow doesn't compete with the login form. */}
+                  <div className="flex justify-end -mt-1">
+                    <Link to="/forgot-password" className="text-xs text-primary hover:underline">
+                      Forgot password?
+                    </Link>
+                  </div>
+
                   <Button type="submit" className="w-full" size="lg" disabled={busy}>
                     {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Sign in'}
                   </Button>
