@@ -121,14 +121,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { error: error?.message ?? null };
   };
 
-  const signInWithGoogle: AuthContextType['signInWithGoogle'] = async () => {
+  const signInWithGoogle: AuthContextType['signInWithGoogle'] = async (redirectPath) => {
     // Lovable's managed OAuth wrapper exchanges the OAuth tokens for a
     // Supabase session under the hood, so callers don't deal with PKCE.
+    // We persist the intended post-login path in sessionStorage BEFORE the
+    // full-page redirect happens — after Google bounces the user back to
+    // window.location.origin, AuthContext reads and clears it to navigate.
+    if (redirectPath && redirectPath !== '/') {
+      try { sessionStorage.setItem('auth:redirectAfter', redirectPath); } catch { /* storage disabled */ }
+    }
     const { lovable } = await import('@/integrations/lovable');
     const result = await lovable.auth.signInWithOAuth('google', {
+      // Must be a public same-origin URL, NOT a protected route — the
+      // wrapper needs to set the session before the app guards evaluate.
       redirect_uri: window.location.origin,
     });
     return { error: result.error ? String(result.error.message ?? result.error) : null };
+  };
+
+  // Password reset: Supabase sends an email whose link contains a recovery
+  // token. Landing that token on /reset-password lets updateUser() apply
+  // the new password without ever exposing the token to our own backend.
+  const resetPasswordForEmail: AuthContextType['resetPasswordForEmail'] = async (email) => {
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+    return { error: error?.message ?? null };
+  };
+
+  const updatePassword: AuthContextType['updatePassword'] = async (newPassword) => {
+    const { error } = await supabase.auth.updateUser({ password: newPassword });
+    return { error: error?.message ?? null };
   };
 
   const signOut = async () => {
@@ -148,6 +171,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         signInWithPassword,
         signUp,
         signInWithGoogle,
+        resetPasswordForEmail,
+        updatePassword,
         signOut,
         // Alias kept so existing Header/menus continue to work unchanged.
         logout: signOut,
