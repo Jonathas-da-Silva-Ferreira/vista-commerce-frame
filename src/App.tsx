@@ -122,6 +122,8 @@ const App = () => (
                       <Route path="/orders" element={<StorefrontShell><ProtectedRoute><CheckoutPage /></ProtectedRoute></StorefrontShell>} />
                       <Route path="/favorites" element={<StorefrontShell><FavoritesPage /></StorefrontShell>} />
                       <Route path="/login" element={<StorefrontShell><LoginPage /></StorefrontShell>} />
+                      <Route path="/forgot-password" element={<StorefrontShell><ForgotPasswordPage /></StorefrontShell>} />
+                      <Route path="/reset-password" element={<StorefrontShell><ResetPasswordPage /></StorefrontShell>} />
                       <Route path="/sell" element={<StorefrontShell><SellProductPage /></StorefrontShell>} />
                       <Route path="/contact" element={<StorefrontShell><ContactPage /></StorefrontShell>} />
                       <Route path="/logistics" element={<StorefrontShell><LogisticsDashboardPage /></StorefrontShell>} />
