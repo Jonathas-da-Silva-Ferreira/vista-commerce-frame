@@ -39,6 +39,8 @@ const CartPage = lazy(() => import("./pages/CartPage"));
 const CheckoutPage = lazy(() => import("./pages/CheckoutPage"));
 const FavoritesPage = lazy(() => import("./pages/FavoritesPage"));
 const LoginPage = lazy(() => import("./pages/LoginPage"));
+const ForgotPasswordPage = lazy(() => import("./pages/ForgotPasswordPage"));
+const ResetPasswordPage = lazy(() => import("./pages/ResetPasswordPage"));
 const SellProductPage = lazy(() => import("./pages/SellProductPage"));
 const ContactPage = lazy(() => import("./pages/ContactPage"));
 const LogisticsDashboardPage = lazy(() => import("./pages/LogisticsDashboardPage"));
@@ -120,6 +122,8 @@ const App = () => (
                       <Route path="/orders" element={<StorefrontShell><ProtectedRoute><CheckoutPage /></ProtectedRoute></StorefrontShell>} />
                       <Route path="/favorites" element={<StorefrontShell><FavoritesPage /></StorefrontShell>} />
                       <Route path="/login" element={<StorefrontShell><LoginPage /></StorefrontShell>} />
+                      <Route path="/forgot-password" element={<StorefrontShell><ForgotPasswordPage /></StorefrontShell>} />
+                      <Route path="/reset-password" element={<StorefrontShell><ResetPasswordPage /></StorefrontShell>} />
                       <Route path="/sell" element={<StorefrontShell><SellProductPage /></StorefrontShell>} />
                       <Route path="/contact" element={<StorefrontShell><ContactPage /></StorefrontShell>} />
                       <Route path="/logistics" element={<StorefrontShell><LogisticsDashboardPage /></StorefrontShell>} />

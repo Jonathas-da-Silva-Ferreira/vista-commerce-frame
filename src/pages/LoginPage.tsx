@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Link, useNavigate, useLocation, Navigate } from 'react-router-dom';
 import { Eye, EyeOff, Mail, Lock, User as UserIcon, UserX, AlertCircle, Loader2 } from 'lucide-react';
 import MainLayout from '@/components/layout/MainLayout';
 import SEO from '@/components/SEO';
@@ -23,9 +23,11 @@ import { useAuth } from '@/contexts/AuthContext';
 export default function LoginPage() {
   const navigate = useNavigate();
   const routerLocation = useLocation();
-  const { signInWithPassword, signUp, signInWithGoogle } = useAuth();
+  const { signInWithPassword, signUp, signInWithGoogle, isAuthenticated, loading } = useAuth();
 
   const [showPassword, setShowPassword] = useState(false);
+  // `busy` gates every submit button so a double-click (or the user hitting
+  // Enter twice) cannot fire duplicate auth requests against the server.
   const [busy, setBusy] = useState(false);
   const [loginData, setLoginData] = useState({ email: '', password: '' });
   const [registerData, setRegisterData] = useState({
@@ -38,10 +40,28 @@ export default function LoginPage() {
   const from = (routerLocation.state as { from?: { pathname: string } } | null)?.from?.pathname || '/';
   const isRedirected = from !== '/';
 
+  // Redirect already-authenticated users away from the login screen. We wait
+  // for `loading` so we don't bounce during the initial session rehydration.
+  useEffect(() => {
+    if (!loading && isAuthenticated) {
+      navigate(from, { replace: true });
+    }
+  }, [loading, isAuthenticated, from, navigate]);
+
+  // Basic client-side sanitation: trim whitespace and cap length. Real
+  // validation still happens server-side; this just blocks obvious garbage.
+  const cleanEmail = (v: string) => v.trim().toLowerCase().slice(0, 254);
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (busy) return; // Guard against double-submit races.
+    const email = cleanEmail(loginData.email);
+    if (!email || !loginData.password) {
+      toast.error('Enter your email and password');
+      return;
+    }
     setBusy(true);
-    const { error } = await signInWithPassword(loginData.email, loginData.password);
+    const { error } = await signInWithPassword(email, loginData.password);
     setBusy(false);
     if (error) {
       // Surface server-side reason (wrong password, unconfirmed email…)
@@ -55,18 +75,26 @@ export default function LoginPage() {
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (busy) return;
     if (registerData.password !== registerData.confirmPassword) {
       toast.error('Passwords do not match');
       return;
     }
-    if (registerData.password.length < 6) {
-      toast.error('Password must be at least 6 characters long');
+    // Enforce a stronger baseline than Supabase's default 6-char minimum.
+    // A password must have a lower, upper, digit, and be at least 8 chars —
+    // this blocks the most common trivially-guessed credentials.
+    const pw = registerData.password;
+    const strong = pw.length >= 8 && /[a-z]/.test(pw) && /[A-Z]/.test(pw) && /\d/.test(pw);
+    if (!strong) {
+      toast.error('Password must be 8+ chars with upper, lower and a number');
       return;
     }
     setBusy(true);
-    const { error } = await signUp(registerData.email, registerData.password, registerData.name);
+    const { error } = await signUp(cleanEmail(registerData.email), pw, registerData.name.trim().slice(0, 80));
     setBusy(false);
     if (error) {
+      // Supabase returns a specific message when the email is already in
+      // use — surface it verbatim so the user knows to sign in instead.
       toast.error(error);
       return;
     }
@@ -76,17 +104,34 @@ export default function LoginPage() {
   };
 
   const handleGoogle = async () => {
+    if (busy) return;
     setBusy(true);
-    const { error } = await signInWithGoogle();
-    setBusy(false);
-    if (error) toast.error(error);
-    // On success the page is redirected by the OAuth flow; no navigate() needed.
+    // Pass the intended destination so it survives the full-page OAuth
+    // redirect. Supabase automatically links a Google identity to an
+    // existing account when the verified email matches — no extra code.
+    const { error } = await signInWithGoogle(from);
+    if (error) {
+      setBusy(false);
+      toast.error(error);
+      return;
+    }
+    // On success the browser is redirected to Google. Keep busy=true so
+    // buttons stay disabled during the brief window before navigation.
   };
 
   const handleGuestContinue = () => {
     toast.info('Continuing as a guest');
     navigate('/');
   };
+
+  // While the session is being restored, avoid rendering the form to
+  // prevent a flash of the login UI for an already-signed-in user.
+  if (loading || isAuthenticated) {
+    return <Navigate to={from} replace />;
+  }
+
+
+
 
   return (
     <MainLayout>
@@ -141,6 +186,14 @@ export default function LoginPage() {
                         {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                       </button>
                     </div>
+                  </div>
+
+                  {/* Forgot password link — routes to a dedicated page so
+                      the reset flow doesn't compete with the login form. */}
+                  <div className="flex justify-end -mt-1">
+                    <Link to="/forgot-password" className="text-xs text-primary hover:underline">
+                      Forgot password?
+                    </Link>
                   </div>
 
                   <Button type="submit" className="w-full" size="lg" disabled={busy}>

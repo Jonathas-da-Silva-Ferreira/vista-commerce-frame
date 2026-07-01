@@ -28,7 +28,13 @@ interface AuthContextType {
   isSeller: boolean;
   signInWithPassword: (email: string, password: string) => Promise<{ error: string | null }>;
   signUp: (email: string, password: string, displayName: string) => Promise<{ error: string | null }>;
-  signInWithGoogle: () => Promise<{ error: string | null }>;
+  // `redirectPath` is remembered so the OAuth full-page redirect can return
+  // the user to the page they were originally trying to access.
+  signInWithGoogle: (redirectPath?: string) => Promise<{ error: string | null }>;
+  // Sends a Supabase password-reset email. The link lands on /reset-password
+  // where updatePassword() finishes the flow.
+  resetPasswordForEmail: (email: string) => Promise<{ error: string | null }>;
+  updatePassword: (newPassword: string) => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
   // `logout` is a back-compat alias for legacy callers (e.g. Header).
   logout: () => Promise<void>;
@@ -62,7 +68,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // We deliberately avoid awaiting Supabase calls inside the listener to
   // prevent deadlocks documented in the SDK.
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, newSession) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, newSession) => {
       setSession(newSession);
       setUser(newSession?.user ? toAppUser(newSession.user) : null);
 
@@ -70,6 +76,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // Defer the role fetch with setTimeout(0) so the auth listener
         // returns synchronously — pattern recommended to avoid SDK deadlocks.
         setTimeout(() => { void loadRoles(newSession.user.id); }, 0);
+
+        // OAuth full-page redirect returns the user to `/`. If we stashed
+        // an intended destination before signInWithGoogle(), honor it now
+        // that the session is live. Skip during PASSWORD_RECOVERY so the
+        // reset-password page keeps control of its own flow.
+        if (event === 'SIGNED_IN') {
+          try {
+            const target = sessionStorage.getItem('auth:redirectAfter');
+            if (target && target !== window.location.pathname) {
+              sessionStorage.removeItem('auth:redirectAfter');
+              window.history.replaceState({}, '', target);
+            } else if (target) {
+              sessionStorage.removeItem('auth:redirectAfter');
+            }
+          } catch { /* storage disabled */ }
+        }
       } else {
         setRoles([]);
       }
@@ -115,14 +137,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { error: error?.message ?? null };
   };
 
-  const signInWithGoogle: AuthContextType['signInWithGoogle'] = async () => {
+  const signInWithGoogle: AuthContextType['signInWithGoogle'] = async (redirectPath) => {
     // Lovable's managed OAuth wrapper exchanges the OAuth tokens for a
     // Supabase session under the hood, so callers don't deal with PKCE.
+    // We persist the intended post-login path in sessionStorage BEFORE the
+    // full-page redirect happens — after Google bounces the user back to
+    // window.location.origin, AuthContext reads and clears it to navigate.
+    if (redirectPath && redirectPath !== '/') {
+      try { sessionStorage.setItem('auth:redirectAfter', redirectPath); } catch { /* storage disabled */ }
+    }
     const { lovable } = await import('@/integrations/lovable');
     const result = await lovable.auth.signInWithOAuth('google', {
+      // Must be a public same-origin URL, NOT a protected route — the
+      // wrapper needs to set the session before the app guards evaluate.
       redirect_uri: window.location.origin,
     });
     return { error: result.error ? String(result.error.message ?? result.error) : null };
+  };
+
+  // Password reset: Supabase sends an email whose link contains a recovery
+  // token. Landing that token on /reset-password lets updateUser() apply
+  // the new password without ever exposing the token to our own backend.
+  const resetPasswordForEmail: AuthContextType['resetPasswordForEmail'] = async (email) => {
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+    return { error: error?.message ?? null };
+  };
+
+  const updatePassword: AuthContextType['updatePassword'] = async (newPassword) => {
+    const { error } = await supabase.auth.updateUser({ password: newPassword });
+    return { error: error?.message ?? null };
   };
 
   const signOut = async () => {
@@ -142,6 +187,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         signInWithPassword,
         signUp,
         signInWithGoogle,
+        resetPasswordForEmail,
+        updatePassword,
         signOut,
         // Alias kept so existing Header/menus continue to work unchanged.
         logout: signOut,
