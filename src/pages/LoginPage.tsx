@@ -23,9 +23,11 @@ import { useAuth } from '@/contexts/AuthContext';
 export default function LoginPage() {
   const navigate = useNavigate();
   const routerLocation = useLocation();
-  const { signInWithPassword, signUp, signInWithGoogle } = useAuth();
+  const { signInWithPassword, signUp, signInWithGoogle, isAuthenticated, loading } = useAuth();
 
   const [showPassword, setShowPassword] = useState(false);
+  // `busy` gates every submit button so a double-click (or the user hitting
+  // Enter twice) cannot fire duplicate auth requests against the server.
   const [busy, setBusy] = useState(false);
   const [loginData, setLoginData] = useState({ email: '', password: '' });
   const [registerData, setRegisterData] = useState({
@@ -37,6 +39,18 @@ export default function LoginPage() {
 
   const from = (routerLocation.state as { from?: { pathname: string } } | null)?.from?.pathname || '/';
   const isRedirected = from !== '/';
+
+  // Redirect already-authenticated users away from the login screen. We wait
+  // for `loading` so we don't bounce during the initial session rehydration.
+  useEffect(() => {
+    if (!loading && isAuthenticated) {
+      navigate(from, { replace: true });
+    }
+  }, [loading, isAuthenticated, from, navigate]);
+
+  // Basic client-side sanitation: trim whitespace and cap length. Real
+  // validation still happens server-side; this just blocks obvious garbage.
+  const cleanEmail = (v: string) => v.trim().toLowerCase().slice(0, 254);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
