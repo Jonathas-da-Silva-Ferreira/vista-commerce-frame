@@ -1,73 +1,164 @@
-# Welcome to your Lovable project
+# 🛒 Full Stack E-commerce
 
-## Project info
+## 📖 About the Project
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+This project is a Full Stack e-commerce application built as part of my software engineering portfolio.
 
-## How can I edit this code?
+Its main goal is to apply modern web development concepts while improving my skills in frontend, backend, APIs, databases, authentication, and software architecture.
 
-There are several ways of editing your application.
+This repository is under active development, and new features are continuously being added.
 
-**Use Lovable**
+> **Project Status:** 🚧 In Progress
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
+---
 
-Changes made via Lovable will be committed automatically to this repo.
+# 🚀 Tech Stack
 
-**Use your preferred IDE**
+## Frontend
+- React
+- TypeScript
+- Vite
+- Tailwind CSS
+- shadcn/ui
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+## Backend
+- Python
+- Django
+- Django REST Framework
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+## Database
+- MySQL
 
-Follow these steps:
+## Version Control
+- Git
+- GitHub
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+---
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+# ✅ Current Features
 
-# Step 3: Install the necessary dependencies.
-npm i
+- Project structure
+- Responsive UI
+- Product catalog
+- Initial Django REST API
+- Product registration
+- Frontend and backend integration
+- Organized project architecture
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+---
+
+# 🚧 Features in Progress
+
+- User authentication
+- Google Sign-In
+- Password recovery
+- Shopping cart
+- Wishlist
+- Checkout process
+- Payment integration
+- Admin dashboard
+- Inventory management
+- Order history
+- User profile
+- Deployment
+
+---
+
+# 📌 Planned Improvements
+
+- Docker support
+- Automated testing
+- CI/CD pipeline
+- Microservices architecture
+- Monitoring and logging
+- API documentation
+- Performance optimization
+
+---
+
+# 📚 What I Learned
+
+During the development of this project, I improved my knowledge in:
+
+- React and TypeScript
+- Django REST Framework
+- REST API development
+- MySQL database design
+- Git and GitHub workflow
+- Frontend and backend integration
+- Debugging and problem solving
+
+---
+
+# ⚙️ Getting Started
+
+### Clone the repository
+
+```bash
+git clone <repository-url>
+```
+
+### Frontend
+
+```bash
+cd frontend
+npm install
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+### Backend
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+```bash
+cd backend
+pip install -r requirements.txt
+python manage.py runserver
+```
 
-**Use GitHub Codespaces**
+---
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+# 📂 Project Structure
 
-## What technologies are used for this project?
+```
+frontend/
+backend/
+docs/
+```
 
-This project is built with:
+---
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+# 🎯 Project Goals
 
-## How can I deploy this project?
+This project was created to:
 
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
+- Improve my Full Stack development skills
+- Practice software architecture
+- Build scalable web applications
+- Learn modern development workflows
+- Create a professional portfolio
 
-## Can I connect a custom domain to my Lovable project?
+---
 
-Yes, you can!
+# 🔄 Roadmap
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+- [x] Initial project setup
+- [x] Product management
+- [x] Frontend structure
+- [ ] User authentication
+- [ ] Shopping cart
+- [ ] Payment system
+- [ ] Admin dashboard
+- [ ] Docker
+- [ ] CI/CD
+- [ ] Production deployment
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+---
+
+# 👨‍💻 Author
+
+**Jonathas da Silva Ferreira**
+
+Software Engineer | Full Stack Developer
+
+GitHub: https://github.com/your-username
+
+LinkedIn: https://linkedin.com/in/your-profile
