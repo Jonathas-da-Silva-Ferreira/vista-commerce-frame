@@ -149,3 +149,22 @@ CREATE TABLE products (
 -- BANNERS
 -- =============================================================================
 
+CREATE TABLE banners (
+    id CHAR(36) NOR NULL,
+    title VARCHAR(255) NOT NULL,
+    subtitle TEXT,
+    image_url VARCHAR(2048) NOR NULL,
+    link_url VARCHAR(2048),
+    position INT NOT NULL DEFAULT 0,
+    active BOOLEAN NOT NULL DEFAULT TRUE,
+    start_at TIMESTAMP NULL,
+    ends_at TIMESTAMP NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_STIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+    PRIMARY KEY (id),
+
+    KEY idx_banners_position (active),
+    KEY idx_banners_position (position)
+
+) ENGINE-InnoDB;
