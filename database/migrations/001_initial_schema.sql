@@ -26,6 +26,7 @@ CREATE TABLE users (
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 
     PRIMARY KEY (id),
+
     UNIQUE KEY uq_users_email (email)
 ) ENGINE=InnoDB;
 
@@ -44,6 +45,7 @@ CREATE TABLE profiles (
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 
     PRIMARY KEY (id),
+
     UNIQUE KEY uq_profiles_user_id (user_id),
 
     CONSTRAINT fk_profiles_user
@@ -72,3 +74,78 @@ CREATE TABLE user_roles (
         ON DELETE CASCADE
 
 ) ENGINE=InnoDB;
+
+-- =============================================================================
+-- CATEGORIES
+-- =============================================================================
+
+CREATE TABLE categories (
+    id CHAR (36) NOT NULL,
+    slug VARCHAR(255) NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    parent_id CHAR(36),
+    enabled BOOLEAN NOT NULL DEFAULT TRUE,
+    sort_order INT NOT NULL DEFAULT 0,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+    PRIMARY KEY (id),
+
+    UNIQUE KEY ue_categories_slug (slug),
+
+    KEY idx_categories_parent_id (parent_id),
+
+    CONSTRAINT fk_categories_parent
+        FOREIGN KEY (parent_id)
+        REFERENCES categories (id)
+        ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+-- =============================================================================
+-- PRODUCTS
+-- =============================================================================
+
+CREATE TABLE products (
+    id CHAR(36) NOT NULL,
+    seller_id CHAR(36) NOT NULL,
+    category_id CHAR(36),
+    name VARCHAR(255) NOT NULL,
+    description TEXT,
+    price DECIMAL(10, 2) NOT NULL,
+    stock INT NOT NULL DEFAULT 0,
+    image_url VARCHAR(2048),
+    status ENUM('active','hiden', 'delete')NOT NULL DEFAULT 'active',
+    sales_count INT NOT NULL DEFAULT 0,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+    PRIMARY KEY (id),
+
+    KEY idx_products_seller_id (seller_id),
+    kEY idx_products_category_id (category_id),
+    KEY idx_products_status (status),
+
+    CONSTRAINT chk_products_price
+        CHECK (price >= 0),
+
+    CONSTRAINT chk_products_stock
+        CHECK (stock >= 0),
+
+    CONSTRAINT chk_products_sales_cound
+        CHECK (sales_count >= 0),
+
+    CONSTRAINT fk_products_seller
+        FOREIGN KEY (seller_id)
+        REFERENCES users (id)
+        ON DELETE CASCADE,
+    
+    CONSTRAINT fk_products_category
+        FOREIGN KEY (category_id)
+        REFERENCES categories (id)
+        ON DELETE SET NULL
+) ENGINE=InnoDB;
+
+-- =============================================================================
+-- BANNERS
+-- =============================================================================
+
