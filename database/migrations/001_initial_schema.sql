@@ -131,7 +131,7 @@ CREATE TABLE products (
     CONSTRAINT chk_products_stock
         CHECK (stock >= 0),
 
-    CONSTRAINT chk_products_sales_cound
+    CONSTRAINT chk_products_sales_count
         CHECK (sales_count >= 0),
 
     CONSTRAINT fk_products_seller
@@ -168,3 +168,104 @@ CREATE TABLE banners (
     KEY idx_banners_position (position)
 
 ) ENGINE-InnoDB;
+
+-- =============================================================================
+-- ORDERS
+-- =============================================================================
+
+CREATE TABLE orders (
+    id CHAR(36) NOT NULL,
+    user_id CHAR(36) NOT NULL,
+    total DECIMAL(10, 2) NOT NULL DEFAULT 0.00,
+    status ENUM(
+        'pending',
+        'paid',
+        'shipped',
+        'delivered',
+        'cancelled',
+        'refunded'
+    ) NOT NULL DEFAULT 'pending',
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+    PRIMARY KEY (id),
+
+    KEY idx_orders_user_id (user_id),
+    KEY idx_orders_status (status),
+
+    CONSTRAINT chk_orders_total 
+        CHECK (total >=0),
+
+    CONSTRAINT fk_orders_user
+        FOREIGN KEY (user_id)
+        REFERENCES users (id)
+        ON DELETE CASCADE
+)ENGINE=InnoDB;
+
+-- =============================================================================
+-- ORDER ITEMS
+-- =============================================================================
+
+CREATE TABLE order_items (
+    id CHAR(36) NOT NULL,
+    order_id CHAR(36) NOT NULL,
+    product_id CHAR(36),
+    product_name VARCHAR(255) NOT NULL,
+    quantity INT NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    PRIMARY KEY (id),
+
+    KEY idx_order_items_order_id (order_id),
+    KEY idx_order_items_product_id (product_id),
+
+    CONSTRAINT chk_order_items_unit_price
+        CHECK (unit_price >=0),
+
+    CONSTRAINT fk_order_items_order
+        CHECK  (quantity > 0),
+
+    CONSTRAINT fk_order_items_order
+        FOREIGN KEY (order_id)
+        REFERENCES orders(id)
+        ON DELETE CASCADE,
+
+    CONSTRAINT fk_order_items_product
+        FOREIGN KEY (product_id)
+        REFERENCES products(id)
+        ON DELETE SET NULL
+)ENGINE=InnoDB;
+
+-- =============================================================================
+-- REVIEWS
+-- =============================================================================
+CREATE TABLE reviews (
+    id CHAR(36) NOT NULL,
+    product_id CHAR(36) NOT NULL,
+    user_id CHAR(36) NOT NULL,
+    rating SMALLINT NOT NULL,
+    title VARCHAR(255),
+    comment VARCHAR(2000) NOT NULL,
+    verified_purchase BOOLEAN NOT NULL DEFAULT FALSE,
+    is_hidden BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    PRIMARY KEY (id),
+
+    UNIQUE KEY  uq_reviews_product_user (product_id, user_id),
+
+    KEY idx_reviews_product_created (product_id, created_at),
+
+    CONSTRAINT chk_reviews_rating
+        CHECK (rating BETWEEN 1 AND 5),
+
+    CONSTRAINT fk_reviews_product
+        FOREIGN KEY (product_id)
+        REFERENCES products (id)
+        ON DELETE CASCADE,
+
+    CONSTRAINT fk_reviews_user
+        FOREIGN KEY (user_id)
+        REFERENCES users (id)
+        ON DELETE CASCADE
+)ENGINE_InnoDB;
