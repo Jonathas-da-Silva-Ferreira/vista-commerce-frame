@@ -164,7 +164,7 @@ CREATE TABLE banners (
 
     PRIMARY KEY (id),
 
-    KEY idx_banners_position (active),
+    KEY idx_banners_active(active),
     KEY idx_banners_position (position)
 
 ) ENGINE-InnoDB;
