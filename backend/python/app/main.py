@@ -1,5 +1,11 @@
-def main():
-    print("Vista Commerce Python Service Iniciando com sucesso!")
+from fastapi import FastAPI
 
-if __name__ == "__main__":
-    main()
+app = FastAPI(title="Vista Commerce Python Service")
+
+
+@app.get("/")
+def read_root():
+    return {
+        "sucess": True,
+        "message": "Vista Commerce Python Service is running!"
+    }
