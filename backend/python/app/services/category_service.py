@@ -1,12 +1,14 @@
+import pymysql
+
 from app.database import get_connection
 
-def get_categorires():
+def get_categories():
     """ 
      Retrive  categories from the MySQL database.
     """
 
     connection = get_connection()
-    cursor = connection.cursor(dictionary=True)
+    cursor = connection.cursor(pymysql.cursors.DictCursor)
 
     try:
         cursor.execute(
