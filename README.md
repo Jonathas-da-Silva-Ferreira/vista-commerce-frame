@@ -159,6 +159,4 @@ This project was created to:
 
 Software Engineer | Full Stack Developer
 
-GitHub: https://github.com/your-username
-
-LinkedIn: https://linkedin.com/in/your-profile
+LinkedIn: [https://linkedin.com/in/your-profile](https://www.linkedin.com/in/jonathas-da-silva-ferreira-922389173/)
