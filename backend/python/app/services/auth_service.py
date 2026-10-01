@@ -1,7 +1,7 @@
 import uuid 
 
 from app.database import get_connection
-from app.security import hash_password, verify_password
+from app.security import (create_access_token,  hash_password, verify_password,)
 
 def register_user(email: str, password: str, display_name: str):
     """
@@ -114,11 +114,14 @@ def login_user(email: str, password: str):
 
         roles = [row[0] for row in cursor.fetchall()]
 
+        access_token = create_access_token({"sub": user_id, "roles": roles})
         return {
             "id": user_id,
             "email": user_email,
             "display_name": display_name,
             "roles": roles,
+            "access_token": access_token,
+            "token_type": "bearer",
         }
 
     finally:
