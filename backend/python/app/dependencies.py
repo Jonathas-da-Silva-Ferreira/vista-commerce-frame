@@ -15,7 +15,8 @@ def get_current_user(
     except Exception:
         raise HTTPException(
             status_code=401,
-            detail="Invalid or expired token. ",)
+            detail="Invalid or expired token. ",
+            )
 
     user_id = payload.get("sub")
 
