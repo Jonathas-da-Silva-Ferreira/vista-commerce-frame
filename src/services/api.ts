@@ -1,4 +1,13 @@
-import type { Product, Category, Banner, PaginatedResponse, AboutContent, HistoryContent, TermsContent } from '@/types';
+import type { Product, 
+              Category, 
+              Banner, 
+              PaginatedResponse, 
+              AboutContent, 
+              HistoryContent, 
+              TermsContent,
+              RegisterRequest,
+              RegisterResponse,
+            } from '@/types';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || '';
 
@@ -18,6 +27,15 @@ class ApiService {
     }
 
     return response.json();
+  }
+
+
+  // Authentication
+  async registerUser(data: RegisterRequest): Promise<RegisterResponse> {
+    return this.request<RegisterResponse>('/auth/register', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
   }
 
   // Products

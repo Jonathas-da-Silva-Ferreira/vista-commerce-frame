@@ -60,6 +60,19 @@ export interface User {
   avatar?: string;
 }
 
+export interface RegisterRequest {
+  email: string;
+  password: string;
+  display_name: string;
+}
+
+export interface RegisterResponse {
+  id: string;
+  email: string;
+  display_name: string;
+  role: 'customer';
+}
+
 // ---------------------------------------------------------------------------
 // Cart
 // ---------------------------------------------------------------------------
