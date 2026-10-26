@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import type { Session, User as SupaUser } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
+import {api} from '@/services/api';
 
 // Why a dedicated AppRole union instead of `string`:
 // every guard in the app branches on these exact values; widening to
@@ -124,19 +125,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signUp: AuthContextType['signUp'] = async (email, password, displayName) => {
-    // emailRedirectTo is REQUIRED so the confirmation link returns the
-    // user to this app instead of Supabase's default landing page.
-    const { error } = await supabase.auth.signUp({
+  try {
+    await api.registerUser({
       email,
       password,
-      options: {
-        emailRedirectTo: `${window.location.origin}/`,
-        data: { display_name: displayName },
-      },
+      display_name: displayName,
     });
-    return { error: error?.message ?? null };
-  };
 
+    return { error: null };
+  } catch (error) {
+    return {
+      error: error instanceof Error ? error.message : 'Registration failed.',
+    };
+  }
+};
   const signInWithGoogle: AuthContextType['signInWithGoogle'] = async (redirectPath) => {
     // Lovable's managed OAuth wrapper exchanges the OAuth tokens for a
     // Supabase session under the hood, so callers don't deal with PKCE.
