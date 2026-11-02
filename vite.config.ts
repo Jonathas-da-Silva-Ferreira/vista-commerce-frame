@@ -8,7 +8,13 @@ export default defineConfig(({ mode }) => ({
   server: {
     host: "::",
     port: 8080,
-    hmr: {
+    proxy: {
+      "/auth": {
+        target: "http://127.0.0.1:8000",
+        changerOrigin: true,
+      },
+    },
+    hmr:{
       overlay: false,
     },
   },
