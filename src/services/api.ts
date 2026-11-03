@@ -11,32 +11,74 @@ import type { Product,
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || '';
 
+interface LoginRequest {
+  email:string;
+  password: string;
+}
+
+interface LoginResponse {
+  id: string;
+  email: string;
+  display_name: string;
+  roles: string[];
+  access_token: string;
+  token_type: string;
+}
+
+interface CurrentUserResponse {
+  id: string;
+  roles: string[];
+}
+
 class ApiService {
   private async request<T>(endpoint: string, options?: RequestInit): Promise<T> {
-    const url = `${API_BASE_URL}${endpoint}`;
-    const response = await fetch(url, {
-      headers: {
-        'Content-Type': 'application/json',
-        ...options?.headers,
-      },
-      ...options,
-    });
+  const url = `${API_BASE_URL}${endpoint}`;
+  const token = localStorage.getItem('vista_access_token');
 
-    if (!response.ok) {
-      throw new Error(`API Error: ${response.status} ${response.statusText}`);
-    }
+  const response = await fetch(url, {
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...options?.headers,
+    },
+  });
 
-    return response.json();
+  if (!response.ok) {
+    throw new Error(`API Error: ${response.status} ${response.statusText}`);
   }
+
+  return response.json();
+}
 
 
   // Authentication
-  async registerUser(data: RegisterRequest): Promise<RegisterResponse> {
-    return this.request<RegisterResponse>('/auth/register', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
-  }
+async registerUser(data: RegisterRequest): Promise<RegisterResponse> {
+  return this.request<RegisterResponse>('/auth/register', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
+async loginUser(data: LoginRequest): Promise<LoginResponse> {
+  const response = await this.request<LoginResponse>('/auth/login', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+
+  localStorage.setItem('vista_access_token', response.access_token);
+
+  return response;
+}
+
+async getCurrentUser(): Promise<CurrentUserResponse> {
+  return this.request<CurrentUserResponse>('/auth/me');
+}
+
+async logoutUser(): Promise<void> {
+  localStorage.removeItem('vista_access_token');
+}
+
 
   // Products
   async getProducts(

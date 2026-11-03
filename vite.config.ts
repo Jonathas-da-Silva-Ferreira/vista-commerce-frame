@@ -11,10 +11,10 @@ export default defineConfig(({ mode }) => ({
     proxy: {
       "/auth": {
         target: "http://127.0.0.1:8000",
-        changerOrigin: true,
+        changeOrigin: true,
       },
     },
-    hmr:{
+    hmr: {
       overlay: false,
     },
   },
