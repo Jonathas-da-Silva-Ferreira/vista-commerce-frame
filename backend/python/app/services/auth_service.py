@@ -127,3 +127,53 @@ def login_user(email: str, password: str):
     finally:
         cursor.close()
         connection.close()
+
+def get_user_by_id(user_id: str):
+    """
+    Retrieve the authenticated user's profile and roles.
+    """
+
+    connection = get_connection()
+
+    try:
+        cursor = connection.cursor()
+
+        cursor.execute(
+            """
+            SELECT
+                u.id,
+                u.email,
+                p.display_name
+            FROM users u
+            LEFT JOIN profiles p ON p.user_id = u.id
+            WHERE u.id = %s
+            """,
+            (user_id,)
+        )
+
+        user = cursor.fetchone()
+
+        if not user:
+            return None
+
+        cursor.execute(
+            """
+            SELECT role
+            FROM user_roles
+            WHERE user_id = %s
+            """,
+            (user_id,)
+        )
+
+        roles = [row[0] for row in cursor.fetchall()]
+
+        return {
+            "id": user[0],
+            "email": user[1],
+            "display_name": user[2],
+            "roles": roles,
+        }
+
+    finally:
+        cursor.close()
+        connection.close()
