@@ -2,11 +2,14 @@ from fastapi import Depends, HTTPException
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from app.security import decode_access_token
+from app.services.auth_service import get_user_by_id
 
-security = HTTPBearer ()
+
+security = HTTPBearer()
+
 
 def get_current_user(
-        credentials: HTTPAuthorizationCredentials = Depends(security),
+    credentials: HTTPAuthorizationCredentials = Depends(security),
 ):
     token = credentials.credentials
 
@@ -15,8 +18,8 @@ def get_current_user(
     except Exception:
         raise HTTPException(
             status_code=401,
-            detail="Invalid or expired token. ",
-            )
+            detail="Invalid or expired token.",
+        )
 
     user_id = payload.get("sub")
 
@@ -26,7 +29,12 @@ def get_current_user(
             detail="Invalid token payload.",
         )
 
-    return {
-        "id": user_id,
-        "roles": payload.get("roles", []),
-    }
+    user = get_user_by_id(user_id)
+
+    if not user:
+        raise HTTPException(
+            status_code=401,
+            detail="User not found.",
+        )
+
+    return user
