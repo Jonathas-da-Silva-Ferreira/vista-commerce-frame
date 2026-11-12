@@ -1,179 +1,199 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import type { Session, User as SupaUser } from '@supabase/supabase-js';
-import { supabase } from '@/integrations/supabase/client';
-import {api} from '@/services/api';
 
-// Why a dedicated AppRole union instead of `string`:
-// every guard in the app branches on these exact values; widening to
-// `string` would let typos pass typecheck and silently break access control.
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  ReactNode,
+} from 'react';
+
+import { api } from '@/services/api';
+
 export type AppRole = 'admin' | 'seller' | 'customer';
 
 export interface AuthUser {
-  id: string;            // auth.users.id (UUID) — used as foreign key everywhere
-  email: string;         // primary identifier shown in UI
-  displayName: string;   // friendly label for headers/avatars
-  // `name` is a back-compat alias used by legacy storefront components.
-  // Kept in sync with displayName so refactor can be incremental.
+  id: string;
+  email: string;
+  displayName: string;
   name: string;
+}
+
+interface AuthSession {
+  access_token: string;
+  token_type: string;
 }
 
 interface AuthContextType {
   user: AuthUser | null;
-  session: Session | null;
+  session: AuthSession | null;
   roles: AppRole[];
-  // `loading` MUST be checked by guards before redirecting; otherwise a
-  // signed-in user is briefly thrown to /login while the session rehydrates.
   loading: boolean;
   isAuthenticated: boolean;
   isAdmin: boolean;
   isSeller: boolean;
-  signInWithPassword: (email: string, password: string) => Promise<{ error: string | null }>;
-  signUp: (email: string, password: string, displayName: string) => Promise<{ error: string | null }>;
-  // `redirectPath` is remembered so the OAuth full-page redirect can return
-  // the user to the page they were originally trying to access.
-  signInWithGoogle: (redirectPath?: string) => Promise<{ error: string | null }>;
-  // Sends a Supabase password-reset email. The link lands on /reset-password
-  // where updatePassword() finishes the flow.
-  resetPasswordForEmail: (email: string) => Promise<{ error: string | null }>;
-  updatePassword: (newPassword: string) => Promise<{ error: string | null }>;
+  signInWithPassword: (
+    email: string,
+    password: string
+  ) => Promise<{ error: string | null }>;
+  signUp: (
+    email: string,
+    password: string,
+    displayName: string
+  ) => Promise<{ error: string | null }>;
+  signInWithGoogle: (
+    redirectPath?: string
+  ) => Promise<{ error: string | null }>;
+  resetPasswordForEmail: (
+    email: string
+  ) => Promise<{ error: string | null }>;
+  updatePassword: (
+    newPassword: string
+  ) => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
-  // `logout` is a back-compat alias for legacy callers (e.g. Header).
   logout: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Maps a Supabase auth user into the shape the rest of the app consumes.
-// Centralizing the mapping keeps the SDK type contained to this module.
-function toAppUser(u: SupaUser): AuthUser {
+function toAppUser(data: {
+  id: string;
+  email: string;
+  display_name: string;
+}): AuthUser {
   const displayName =
-    (u.user_metadata?.display_name as string | undefined) ??
-    (u.email ? u.email.split('@')[0] : 'User');
+    data.display_name || data.email.split('@')[0] || 'User';
+
   return {
-    id: u.id,
-    email: u.email ?? '',
+    id: data.id,
+    email: data.email,
     displayName,
     name: displayName,
   };
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [session, setSession] = useState<Session | null>(null);
+  const [session, setSession] = useState<AuthSession | null>(null);
   const [user, setUser] = useState<AuthUser | null>(null);
   const [roles, setRoles] = useState<AppRole[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Why this exact pattern (subscribe THEN getSession):
-  // Supabase guidance — registering the listener first guarantees we don't
-  // miss the SIGNED_IN event that fires during the initial session refresh.
-  // We deliberately avoid awaiting Supabase calls inside the listener to
-  // prevent deadlocks documented in the SDK.
+  // Restore the authenticated user using the saved JWT.
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, newSession) => {
-      setSession(newSession);
-      setUser(newSession?.user ? toAppUser(newSession.user) : null);
+    let active = true;
 
-      if (newSession?.user) {
-        // Defer the role fetch with setTimeout(0) so the auth listener
-        // returns synchronously — pattern recommended to avoid SDK deadlocks.
-        setTimeout(() => { void loadRoles(newSession.user.id); }, 0);
+    const restoreSession = async () => {
+      const token = localStorage.getItem('vista_access_token');
 
-        // OAuth full-page redirect returns the user to `/`. If we stashed
-        // an intended destination before signInWithGoogle(), honor it now
-        // that the session is live. Skip during PASSWORD_RECOVERY so the
-        // reset-password page keeps control of its own flow.
-        if (event === 'SIGNED_IN') {
-          try {
-            const target = sessionStorage.getItem('auth:redirectAfter');
-            if (target && target !== window.location.pathname) {
-              sessionStorage.removeItem('auth:redirectAfter');
-              window.history.replaceState({}, '', target);
-            } else if (target) {
-              sessionStorage.removeItem('auth:redirectAfter');
-            }
-          } catch { /* storage disabled */ }
-        }
-      } else {
-        setRoles([]);
+      if (!token) {
+        if (active) setLoading(false);
+        return;
       }
-    });
 
-    supabase.auth.getSession().then(({ data: { session: existing } }) => {
-      setSession(existing);
-      setUser(existing?.user ? toAppUser(existing.user) : null);
-      if (existing?.user) void loadRoles(existing.user.id);
-      setLoading(false);
-    });
+      try {
+        const currentUser = await api.getCurrentUser();
 
-    return () => subscription.unsubscribe();
+        if (!active) return;
+
+        setSession({
+          access_token: token,
+          token_type: 'bearer',
+        });
+
+        setUser(toAppUser(currentUser));
+        setRoles(currentUser.roles as AppRole[]);
+      } catch (error) {
+        // Keep the token if the API is temporarily unavailable.
+        // The user can retry when the backend is reachable.
+        console.error('Could not restore authentication:', error);
+
+        if (active) {
+          setUser(null);
+          setSession(null);
+          setRoles([]);
+        }
+      } finally {
+        if (active) setLoading(false);
+      }
+    };
+
+    void restoreSession();
+
+    return () => {
+      active = false;
+    };
   }, []);
 
-  // Roles live in their own table so users can never escalate themselves
-  // by editing their profile. We fetch every assigned role because a user
-  // may simultaneously be both a seller and an admin.
-  const loadRoles = async (userId: string) => {
-    const { data, error } = await supabase
-      .from('user_roles')
-      .select('role')
-      .eq('user_id', userId);
-    if (!error && data) setRoles(data.map((r) => r.role as AppRole));
-  };
+  // Authenticate using the FastAPI backend.
+  const signInWithPassword: AuthContextType['signInWithPassword'] =
+    async (email, password) => {
+      try {
+        const response = await api.loginUser({
+          email,
+          password,
+        });
 
-  const signInWithPassword: AuthContextType['signInWithPassword'] = async (email, password) => {
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    return { error: error?.message ?? null };
-  };
+        setSession({
+          access_token: response.access_token,
+          token_type: response.token_type,
+        });
 
-  const signUp: AuthContextType['signUp'] = async (email, password, displayName) => {
-  try {
-    await api.registerUser({
-      email,
-      password,
-      display_name: displayName,
-    });
+        setUser(toAppUser(response));
+        setRoles(response.roles as AppRole[]);
 
-    return { error: null };
-  } catch (error) {
-    return {
-      error: error instanceof Error ? error.message : 'Registration failed.',
+        return { error: null };
+      } catch (error) {
+        return {
+          error: error instanceof Error
+            ? error.message
+            : 'Login failed.',
+        };
+      }
     };
-  }
-};
-  const signInWithGoogle: AuthContextType['signInWithGoogle'] = async (redirectPath) => {
-    // Lovable's managed OAuth wrapper exchanges the OAuth tokens for a
-    // Supabase session under the hood, so callers don't deal with PKCE.
-    // We persist the intended post-login path in sessionStorage BEFORE the
-    // full-page redirect happens — after Google bounces the user back to
-    // window.location.origin, AuthContext reads and clears it to navigate.
-    if (redirectPath && redirectPath !== '/') {
-      try { sessionStorage.setItem('auth:redirectAfter', redirectPath); } catch { /* storage disabled */ }
-    }
-    const { lovable } = await import('@/integrations/lovable');
-    const result = await lovable.auth.signInWithOAuth('google', {
-      // Must be a public same-origin URL, NOT a protected route — the
-      // wrapper needs to set the session before the app guards evaluate.
-      redirect_uri: window.location.origin,
+
+  // Register a new customer through FastAPI.
+  const signUp: AuthContextType['signUp'] =
+    async (email, password, displayName) => {
+      try {
+        await api.registerUser({
+          email,
+          password,
+          display_name: displayName,
+        });
+
+        return { error: null };
+      } catch (error) {
+        return {
+          error: error instanceof Error
+            ? error.message
+            : 'Registration failed.',
+        };
+      }
+    };
+
+  // Google OAuth will be implemented after the basic JWT authentication.
+  const signInWithGoogle: AuthContextType['signInWithGoogle'] =
+    async () => ({
+      error: 'Google authentication is not available yet.',
     });
-    return { error: result.error ? String(result.error.message ?? result.error) : null };
-  };
 
-  // Password reset: Supabase sends an email whose link contains a recovery
-  // token. Landing that token on /reset-password lets updateUser() apply
-  // the new password without ever exposing the token to our own backend.
-  const resetPasswordForEmail: AuthContextType['resetPasswordForEmail'] = async (email) => {
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/reset-password`,
+  // Password recovery endpoints have not been implemented in FastAPI yet.
+  const resetPasswordForEmail: AuthContextType['resetPasswordForEmail'] =
+    async () => ({
+      error: 'Password recovery is not available yet.',
     });
-    return { error: error?.message ?? null };
-  };
 
-  const updatePassword: AuthContextType['updatePassword'] = async (newPassword) => {
-    const { error } = await supabase.auth.updateUser({ password: newPassword });
-    return { error: error?.message ?? null };
-  };
+  const updatePassword: AuthContextType['updatePassword'] =
+    async () => ({
+      error: 'Password update is not available yet.',
+    });
 
+  // Remove the JWT and clear the authenticated user.
   const signOut = async () => {
-    await supabase.auth.signOut();
+    await api.logoutUser();
+
+    setSession(null);
+    setUser(null);
+    setRoles([]);
   };
 
   return (
@@ -183,7 +203,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         session,
         roles,
         loading,
-        isAuthenticated: !!session,
+        isAuthenticated: !!user && !!session,
         isAdmin: roles.includes('admin'),
         isSeller: roles.includes('seller'),
         signInWithPassword,
@@ -192,7 +212,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         resetPasswordForEmail,
         updatePassword,
         signOut,
-        // Alias kept so existing Header/menus continue to work unchanged.
         logout: signOut,
       }}
     >
@@ -201,10 +220,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 }
 
-// Throwing (vs returning undefined) gives a clear error if a component
-// renders outside the provider — much easier to debug than a null crash.
 export function useAuth() {
-  const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error('useAuth must be used within AuthProvider');
-  return ctx;
+  const context = useContext(AuthContext);
+
+  if (!context) {
+    throw new Error('useAuth must be used within AuthProvider');
+  }
+
+  return context;
 }
